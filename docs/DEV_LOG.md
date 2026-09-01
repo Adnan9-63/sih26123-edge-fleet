@@ -33,9 +33,34 @@ version for an honest, apples-to-apples benchmark (see
 
 ## Day 3 — comms layer
 
-*(fill in: what backend you actually used — ROS2/DDS or UDP fallback —
-and why; what `Peer.broadcast`/`poll_neighbors` ended up looking like;
-any surprises)*
+**Built:** `comms/p2p.py` using UDP multicast (`239.255.42.99:5007`),
+not ROS2/DDS and not MQTT. `Peer.broadcast()` sends one UDP packet to the
+multicast group; every other `Peer` that joined the group receives it
+directly — no broker, no relay process, no central server anywhere in
+the path. `Peer.poll_neighbors()` returns only neighbors heard from
+within the last `STALE_AFTER` (2s) seconds, so anything older is dropped
+automatically. `Peer.kill()` simulates a robot's comms going dark.
+
+**Decision log:** picked UDP multicast over ROS2/DDS for now — DDS is
+the more "textbook decentralized" answer and stays on the table as a
+stretch upgrade, but a full ROS2 install (WSL2 on Windows) wasn't worth
+the setup time against a 7-day clock. UDP multicast keeps the same core
+property (broker-free, peer-to-peer) with zero extra installs on any OS.
+
+**Verified:** 3 tests in `tests/test_p2p.py`, all passing — two peers
+discover each other's broadcasts, a peer ignores its own broadcast, and
+critically: a killed peer's last-known state goes stale and disappears
+from its neighbor's view within ~2 seconds, with nothing else in the
+system needing to notice or announce the disconnection. This last test
+is the actual proof behind the live resilience demo in
+`ARCHITECTURE.md` — kill one robot's connection on stage, the rest keep
+running.
+
+**Next:** Day 4-5 — PIBT conflict resolution + ORCA local avoidance,
+wired to actually use `Peer.poll_neighbors()` for the "intent" data this
+layer now shares but nothing consumes yet.
+
+---
 
 ---
 
