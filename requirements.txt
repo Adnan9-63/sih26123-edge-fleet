@@ -1,0 +1,13 @@
+# Day 1-2 (used now)
+pytest>=7.4
+
+# Day 4-5 (local collision avoidance layer)
+rvo2  # Python-RVO2 -- ORCA implementation, https://github.com/sybrenstuvel/Python-RVO2
+numpy
+
+# Day 7 (fleet dashboard)
+pygame
+
+# Optional, only if the team goes ROS2 for comms/p2p.py instead of the
+# raw-UDP fallback (install separately via apt/ROS2 package manager,
+# not pip -- see docs/PS_MAPPING.md notes on comms.p2p)

@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[project]
+name = "sih26123-edge-fleet"
+version = "0.1.0"
+description = "Decentralized edge-AI fleet coordination for warehouse AMRs — SIH26123 (BEL)"
+requires-python = ">=3.10"
