@@ -30,7 +30,8 @@ log with what shipped each day and why.
 
 - [x] **Day 1-2** — grid world with narrow choke points, single-agent A*, tick engine, tests
 - [x] **Day 3** — decentralized comms layer (UDP multicast, no broker)
-- [ ] **Day 4-5** — PIBT conflict resolution + ORCA local avoidance
+- [x] **Day 4** — PIBT conflict resolution (13/13 tests passing; see docs/DEV_LOG.md for real bugs found and fixed)
+- [ ] **Day 5** — ORCA local avoidance (bonus layer — PIBT alone already satisfies the PS's core conflict-resolution ask; see dev log)
 - [ ] **Day 6** — decentralized auction-based task allocation, blocked-aisle re-routing
 - [ ] **Day 7** — fleet dashboard, stop-and-wait baseline benchmark, final numbers
 
