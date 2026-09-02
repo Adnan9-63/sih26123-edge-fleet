@@ -1,18 +1,21 @@
 """
 Tick-based simulation engine.
 
-DAY 1-2 SCOPE: agents follow their independently-planned A* paths and
-naively step forward each tick. This intentionally does NOT resolve
-conflicts yet -- if two agents' paths cross at the same tick, this engine
-currently just detects and counts it. That is deliberate: it means we can
-run this exact engine as the "traditional stop-and-wait" style baseline
-later in benchmark/, then swap in the PIBT-based conflict-resolving
-planner (Day 4-5) and diff the two runs to produce the honest, on-screen
-comparison the PS's Success Criteria asks for (zero collisions, >=20%
-faster than the naive baseline).
+Supports two interchangeable planner modes, selected at construction:
 
-Do not add conflict resolution to this file directly -- it belongs in
-planning/pibt.py so the two behaviours stay swappable and comparable.
+  mode="naive" (Day 1-2 default) -- agents follow their independently
+  planned A* paths and step forward blindly, with no conflict resolution.
+  If two agents' paths cross at the same tick, this mode just detects and
+  counts it. This is deliberately kept as-is -- it becomes the
+  "traditional stop-and-wait"-style baseline the benchmark compares
+  against later.
+
+  mode="pibt" (Day 4) -- delegates each tick's next-cell decisions to
+  planning.pibt.plan_step(), which is collision-free and swap-free by
+  construction (see that module for why). This is the same engine, same
+  grid, same agents -- only the planner differs, which is exactly what
+  makes the benchmark comparison honest (see ARCHITECTURE.md, "Benchmark
+  methodology").
 """
 from __future__ import annotations
 
@@ -20,6 +23,7 @@ from dataclasses import dataclass, field
 
 from fleet.agent import Agent
 from fleet.grid import WarehouseGrid
+from fleet.planning import pibt as pibt_planner
 from fleet.planning.astar import astar
 
 
@@ -30,9 +34,12 @@ class TickResult:
 
 
 class SimulationEngine:
-    def __init__(self, grid: WarehouseGrid, agents: list[Agent]):
+    def __init__(self, grid: WarehouseGrid, agents: list[Agent], mode: str = "naive"):
+        if mode not in ("naive", "pibt"):
+            raise ValueError(f"unknown mode {mode!r}, expected 'naive' or 'pibt'")
         self.grid = grid
         self.agents = {a.agent_id: a for a in agents}
+        self.mode = mode
         self.tick_count = 0
         self.total_collisions = 0
         self._plan_all()
@@ -41,19 +48,34 @@ class SimulationEngine:
         for agent in self.agents.values():
             agent.path = astar(self.grid, agent.pos, agent.goal)
 
-    def step(self) -> TickResult:
-        self.tick_count += 1
+    def _propose_naive(self) -> dict[str, tuple]:
         proposed: dict[str, tuple] = {}
-
         for agent in self.agents.values():
             if agent.at_goal or len(agent.path) < 2:
                 proposed[agent.agent_id] = agent.pos
-                continue
-            proposed[agent.agent_id] = agent.path[1]
+            else:
+                proposed[agent.agent_id] = agent.path[1]
+        return proposed
 
-        # naive same-cell collision check (swap/edge conflicts are handled
-        # once PIBT lands in Day 4-5 -- flagged explicitly, not silently
-        # ignored)
+    def _propose_pibt(self) -> dict[str, tuple]:
+        # PIBT doesn't need a precomputed path -- it re-derives the best
+        # direction toward agent.goal every tick from the grid directly.
+        # tick_count is passed through purely to vary tie-breaks and
+        # escape symmetric deadlocks -- see plan_step's docstring.
+        return pibt_planner.plan_step(self.grid, self.agents, tick=self.tick_count)
+
+    def step(self) -> TickResult:
+        self.tick_count += 1
+
+        if self.mode == "naive":
+            proposed = self._propose_naive()
+        else:
+            proposed = self._propose_pibt()
+
+        # Collision check runs regardless of mode -- in "pibt" mode this
+        # should always come back empty. Checking it anyway rather than
+        # assuming it is exactly what turns "PIBT prevents collisions"
+        # from a claim into a continuously-verified property.
         occupancy: dict[tuple, list[str]] = {}
         for agent_id, cell in proposed.items():
             occupancy.setdefault(cell, []).append(agent_id)
@@ -70,10 +92,25 @@ class SimulationEngine:
             new_pos = proposed[agent.agent_id]
             moved = new_pos != agent.pos
             agent.pos = new_pos
-            if moved and len(agent.path) >= 2:
+            if self.mode == "naive" and moved and len(agent.path) >= 2:
                 agent.path.pop(0)
             agent.drain_battery(moved=moved)
-            agent.blocked_ticks = 0 if moved else agent.blocked_ticks + 1
+
+            # blocked_ticks feeds PIBT's priority (planning/pibt.py) --
+            # it must only track genuine, unwanted blockage. An agent
+            # sitting at its own goal "fails to move" every tick by
+            # choice, not by contention; if that counted toward
+            # priority the same as real blockage, an at-goal agent's
+            # priority climbs forever and permanently out-ranks (and so
+            # permanently blocks) any agent still trying to pass through
+            # it -- caught during Day 4 testing on the 3-agent scenario,
+            # see docs/DEV_LOG.md.
+            if agent.at_goal:
+                agent.blocked_ticks = 0
+            elif moved:
+                agent.blocked_ticks = 0
+            else:
+                agent.blocked_ticks += 1
 
         return result
 

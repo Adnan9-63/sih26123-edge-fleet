@@ -62,6 +62,36 @@ class WarehouseGrid:
             if self.is_free(nxt):
                 yield nxt
 
+    def bfs_distances(self, goal: Cell) -> dict[Cell, int]:
+        """True graph-shortest-path distance (in hops) from every
+        reachable free cell to `goal`, respecting obstacles.
+
+        Deliberately NOT Manhattan distance: Manhattan distance is blind
+        to walls, and in a warehouse grid that's a real bug, not a minor
+        approximation -- an agent standing right next to a shelving unit
+        with its goal on the other side sees a sideways step as "no
+        closer" by Manhattan distance (a wall-crossing straight line
+        looks short even though it's blocked), so a purely
+        Manhattan-greedy agent can stand still forever right next to the
+        opening it actually needs to take. Caught during Day 4 testing
+        on exactly this grid -- see docs/DEV_LOG.md.
+
+        Cheap to compute (single BFS, O(cells)) and meant to be cached
+        per unique goal, not recomputed every tick -- see
+        planning/pibt.py's `_dist_cache`.
+        """
+        from collections import deque
+
+        dist = {goal: 0}
+        q = deque([goal])
+        while q:
+            cur = q.popleft()
+            for nxt in self.neighbors(cur):
+                if nxt not in dist:
+                    dist[nxt] = dist[cur] + 1
+                    q.append(nxt)
+        return dist
+
     def is_choke_point(self, cell: Cell) -> bool:
         """A free cell with exactly 2 opposite free neighbors (a single-file
         corridor segment) counts as a choke point -- useful for the
