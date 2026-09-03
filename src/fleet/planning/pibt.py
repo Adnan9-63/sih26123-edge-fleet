@@ -45,8 +45,22 @@ bug; the second alone reintroduces eviction of arrived agents.
 """
 from __future__ import annotations
 
+import zlib
+
 from fleet.agent import Agent
 from fleet.grid import Cell, WarehouseGrid
+
+
+def _stable_jitter(agent_id: str, tick: int) -> int:
+    """Deterministic, reproducible tie-break jitter -- deliberately NOT
+    Python's built-in hash(). hash() on strings is randomized per-process
+    by default (PYTHONHASHSEED), which meant the benchmark's tick counts
+    varied between runs even though correctness never did -- unacceptable
+    for a number that gets cited in the idea PPT. zlib.crc32 is stable
+    across runs, processes, and machines. Caught by re-running Day 7's
+    benchmark twice and getting two different (both correct, both
+    zero-collision) tick counts -- see docs/DEV_LOG.md."""
+    return zlib.crc32(f"{agent_id}-{tick}".encode()) % 997
 
 
 # One BFS per unique (goal, grid.version), cached across calls -- cheap
@@ -92,12 +106,13 @@ def plan_step(grid: WarehouseGrid, agents: dict[str, Agent], tick: int = 0) -> d
     in_progress: set[str] = set()
 
     # blocked_ticks dominates (genuine starvation-based fairness); the
-    # hash term only breaks EXACT ties, and changes deterministically
+    # jitter term only breaks EXACT ties, and changes deterministically
     # tick to tick so a persistent symmetric standoff doesn't reproduce
-    # the same losing order forever.
+    # the same losing order forever -- see _stable_jitter's docstring for
+    # why this isn't Python's hash().
     order = sorted(
         agents.keys(),
-        key=lambda aid: (-agents[aid].blocked_ticks, hash((aid, tick)) % 997, aid),
+        key=lambda aid: (-agents[aid].blocked_ticks, _stable_jitter(aid, tick), aid),
     )
 
     def candidates(agent: Agent, being_displaced: bool) -> list[Cell]:
