@@ -3,12 +3,19 @@ Tick-based simulation engine.
 
 Supports two interchangeable planner modes, selected at construction:
 
-  mode="naive" (Day 1-2 default) -- agents follow their independently
-  planned A* paths and step forward blindly, with no conflict resolution.
-  If two agents' paths cross at the same tick, this mode just detects and
-  counts it. This is deliberately kept as-is -- it becomes the
-  "traditional stop-and-wait"-style baseline the benchmark compares
-  against later.
+  mode="naive" -- a genuine "traditional stop-and-wait" baseline: each
+  agent follows its independently precomputed A* path, but before moving
+  checks whether its next cell is currently occupied (by ANY agent's
+  start-of-tick position, snapshotted once so nobody's vacated cell gets
+  used to sneak two agents through each other on the same tick). If
+  occupied, it waits in place rather than moving into it. No negotiation,
+  no replanning, no communication between agents about intent -- exactly
+  the crude-but-collision-free method real "traditional" fleets fall
+  back to, and exactly what the PS names as the comparison point for its
+  Success Criteria. (Day 1-2's version of this mode didn't avoid
+  collisions at all, just counted them -- fixed for Day 7, since an
+  algorithm that crashes robots into each other isn't a real baseline
+  anything gets compared against. See docs/DEV_LOG.md.)
 
   mode="pibt" (Day 4) -- delegates each tick's next-cell decisions to
   planning.pibt.plan_step(), which is collision-free and swap-free by
@@ -49,12 +56,28 @@ class SimulationEngine:
             agent.path = astar(self.grid, agent.pos, agent.goal)
 
     def _propose_naive(self) -> dict[str, tuple]:
+        # Snapshot start-of-tick occupancy ONCE -- checking against this,
+        # rather than against cells as they're claimed, is what prevents
+        # both vertex collisions (two agents into the same empty cell)
+        # and edge/swap collisions (two agents crossing through each
+        # other), without needing PIBT-style recursive reasoning. It's
+        # dumb on purpose: that's the point of this being the baseline.
+        start_occupancy = {a.pos for a in self.agents.values()}
+        claimed_this_tick: set[tuple] = set()
         proposed: dict[str, tuple] = {}
-        for agent in self.agents.values():
+
+        for agent in sorted(self.agents.values(), key=lambda a: a.agent_id):
             if agent.at_goal or len(agent.path) < 2:
                 proposed[agent.agent_id] = agent.pos
+                continue
+
+            desired = agent.path[1]
+            if desired in start_occupancy or desired in claimed_this_tick:
+                proposed[agent.agent_id] = agent.pos  # wait -- blocked
             else:
-                proposed[agent.agent_id] = agent.path[1]
+                proposed[agent.agent_id] = desired
+                claimed_this_tick.add(desired)
+
         return proposed
 
     def _propose_pibt(self) -> dict[str, tuple]:
