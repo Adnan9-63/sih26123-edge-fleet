@@ -18,8 +18,22 @@ design and why each algorithm was chosen.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests/ -v          # run the test suite
+python -m pytest tests/ -v          # run the test suite (18 tests)
 python scripts/run_demo.py          # headless demo, 3 agents on the default map
+python benchmark/stop_and_wait_baseline.py   # regenerate docs/BENCHMARK_RESULTS.md
+```
+
+To see the live dashboard (needs a real display, not headless):
+```python
+from fleet.grid import WarehouseGrid
+from fleet.agent import Agent
+from fleet.sim.engine import SimulationEngine
+from fleet.dashboard import render_pygame
+
+grid = WarehouseGrid.default()
+agents = [Agent("a1", (0,0), (9,8)), Agent("a2", (9,0), (0,8)), Agent("a3", (4,0), (4,8))]
+engine = SimulationEngine(grid, agents, mode="pibt")
+render_pygame.run(grid, engine)
 ```
 
 ## Status
@@ -33,7 +47,7 @@ log with what shipped each day and why.
 - [x] **Day 4** — PIBT conflict resolution (13/13 tests passing; see docs/DEV_LOG.md for real bugs found and fixed)
 - [ ] **Day 5** — ORCA local avoidance (bonus layer — PIBT alone already satisfies the PS's core conflict-resolution ask; see dev log)
 - [x] **Day 6** — decentralized task auction + blocked-aisle re-routing (17/17 tests passing)
-- [ ] **Day 7** — fleet dashboard, stop-and-wait baseline benchmark, final numbers
+- [x] **Day 7** — fleet dashboard, stop-and-wait baseline benchmark — **requirement-complete, 18/18 tests passing**, real numbers in `docs/BENCHMARK_RESULTS.md`
 
 ## Why decentralized (and why that's the point)
 
