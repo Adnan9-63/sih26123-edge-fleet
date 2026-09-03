@@ -11,7 +11,7 @@ See docs/PS_MAPPING.md for the full requirement -> module traceability.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable
 
 Cell = tuple[int, int]
@@ -33,9 +33,14 @@ DEFAULT_LAYOUT = [
 ]
 
 
-@dataclass(frozen=True)
+@dataclass
 class WarehouseGrid:
     layout: tuple[str, ...]
+    blocked_cells: set[Cell] = field(default_factory=set)
+    version: int = 0  # bumped on block_cell/unblock_cell so cached BFS
+                       # distances (planning/pibt.py's _dist_cache) know
+                       # to recompute rather than serve stale distances
+                       # from before the obstacle appeared
 
     @classmethod
     def default(cls) -> "WarehouseGrid":
@@ -53,7 +58,20 @@ class WarehouseGrid:
         x, y = cell
         if not (0 <= x < self.width and 0 <= y < self.height):
             return False
+        if cell in self.blocked_cells:
+            return False
         return self.layout[y][x] != "1"
+
+    def block_cell(self, cell: Cell) -> None:
+        """Simulate a blocked aisle -- a dropped pallet, a stalled robot,
+        anything that temporarily obstructs a cell that's normally free.
+        This is what Day 6's re-routing/re-auction logic reacts to."""
+        self.blocked_cells.add(cell)
+        self.version += 1
+
+    def unblock_cell(self, cell: Cell) -> None:
+        self.blocked_cells.discard(cell)
+        self.version += 1
 
     def neighbors(self, cell: Cell) -> Iterable[Cell]:
         x, y = cell

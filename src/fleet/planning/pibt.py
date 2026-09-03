@@ -49,17 +49,21 @@ from fleet.agent import Agent
 from fleet.grid import Cell, WarehouseGrid
 
 
-# One BFS per unique goal cell, cached across calls -- cheap (O(cells),
-# once per goal, not per tick) and correctly accounts for walls, unlike
-# raw Manhattan distance. See grid.bfs_distances' docstring for why this
-# replaced Manhattan distance during Day 4 testing.
-_dist_cache: dict[Cell, dict[Cell, int]] = {}
+# One BFS per unique (goal, grid.version), cached across calls -- cheap
+# (O(cells), once per goal, not per tick) and correctly accounts for
+# walls, unlike raw Manhattan distance. Keyed on grid.version (not just
+# goal) so a dynamically blocked aisle (grid.block_cell) correctly
+# invalidates stale distances instead of silently serving a route
+# through a cell that's no longer passable -- see grid.py's `version`
+# field and docs/DEV_LOG.md Day 6 entry.
+_dist_cache: dict[tuple[Cell, int], dict[Cell, int]] = {}
 
 
 def _dist_to_goal(grid: WarehouseGrid, cell: Cell, goal: Cell) -> int:
-    if goal not in _dist_cache:
-        _dist_cache[goal] = grid.bfs_distances(goal)
-    return _dist_cache[goal].get(cell, 10**6)  # unreachable -> effectively infinite
+    key = (goal, grid.version)
+    if key not in _dist_cache:
+        _dist_cache[key] = grid.bfs_distances(goal)
+    return _dist_cache[key].get(cell, 10**6)  # unreachable -> effectively infinite
 
 
 def plan_step(grid: WarehouseGrid, agents: dict[str, Agent], tick: int = 0) -> dict[str, Cell]:
