@@ -139,8 +139,41 @@ discrete grid PIBT plans on; whether it was scoped in or deferred)*
 
 ## Day 6 — task allocation
 
-*(fill in: bidding formula used; what happened when you forced a blocked
-aisle mid-run — did re-auctioning actually kick in within a few ticks)*
+**Built:** `allocation/auction.py` -- decentralized bidding (`run_auction`,
+lowest bid wins, bid = true graph distance + battery penalty) and
+blocked-agent release (`check_blocked_agents`, releases a task back to
+the open pool if `Agent.blocked_ticks >= RE_AUCTION_THRESHOLD` while
+carrying it). Also extended `grid.py` with dynamic obstacles
+(`block_cell`/`unblock_cell`) to actually simulate "a robot encounters a
+blocked aisle," which the PS names explicitly.
+
+**One correctness fix that mattered:** `planning/pibt.py`'s BFS distance
+cache was keyed only on goal cell, computed once and reused forever --
+correct for a static grid, wrong the moment `block_cell` changes what's
+reachable. Added `grid.version` (bumped on every block/unblock) and
+rekeyed the cache on `(goal, grid.version)`, so a newly blocked aisle
+can't silently serve stale, now-invalid distances.
+
+**Verified:** 4 new tests, including a full end-to-end scenario -- two
+agents, one task, the entire x=0 corridor sealed with `block_cell`
+before the auction even runs. The auction correctly bids on *true*
+graph distance (not Manhattan), so it already avoids the sealed route
+without needing the blocked-agent check to intervene at all -- both
+mechanisms (auction-time avoidance and mid-task release) are tested, but
+this particular scenario exercises the first one. 17/17 tests passing
+fleet-wide.
+
+**Design note kept honest in the code:** `run_auction` is written as a
+pure function, not an object holding state or authority. It's documented
+explicitly as computing the SAME outcome independent, comms.p2p-based
+per-robot bidding would converge to -- a simulation convenience for
+fast, testable resolution, not a dispatcher. Worth being able to explain
+this distinction clearly if a judge asks "isn't a shared task-allocation
+function just a central coordinator by another name."
+
+**Next:** Day 7 -- fleet dashboard + the actual stop-and-wait vs
+PIBT benchmark, which is what finally produces the real numbers for the
+PS's Success Criteria.
 
 ---
 
