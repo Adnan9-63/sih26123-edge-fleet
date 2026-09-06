@@ -36,6 +36,17 @@ engine = SimulationEngine(grid, agents, mode="pibt")
 render_pygame.run(grid, engine)
 ```
 
+## Visual demo (shareable, no install needed)
+
+`visuals/warehouse_demo.html` is a self-contained browser replay of a real 9-robot,
+9-task run (bigger warehouse layout, `WarehouseGrid.large()`) — just open the file
+in any browser, nothing to install. Includes a scrubbable timeline, live fleet
+battery/task sidebar, and a dynamically blocked aisle mid-run. Regenerate after any
+engine change with:
+```bash
+python scripts/export_demo_run.py      # re-runs the real simulation, writes visuals/demo_run.json
+```
+
 ## Status
 
 Build is sequenced over 7 days, each day's code merged and tagged

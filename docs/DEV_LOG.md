@@ -241,3 +241,18 @@ overstating the result.
 **Status: PS26123 is now requirement-complete.** Every line in
 `docs/PS_MAPPING.md` has real, tested code behind it. 18/18 tests
 passing fleet-wide.
+
+---
+
+## Post-Day-7 — larger fleet + browser-based visual demo
+
+**Why:** the pygame dashboard is real and correct, but it's a desktop window only visible on whoever's laptop runs it -- not shareable, not deployable, and visually plain (flat colored circles). For a live pitch, that's a real weakness worth fixing.
+
+**Built:**
+- `grid.py`: added `WarehouseGrid.large()` -- a bigger, more realistic multi-aisle floor plan (17x11, 8 parallel shelf columns with periodic cross-aisles and an open staging zone) alongside the existing `default()`, which every prior test stays pinned to unchanged.
+- `scripts/export_demo_run.py`: runs a real 9-robot, 9-task scenario through the actual tested engine (auction + PIBT + a dynamically blocked aisle mid-run) and exports every tick as JSON. Nothing in this file is scripted or faked -- it's the same `SimulationEngine`, `run_auction`, and `check_blocked_agents` that the test suite covers.
+- `visuals/warehouse_demo.html`: a single self-contained browser file (no server, no build step, no dependencies beyond two Google Fonts) that replays the exported run with smooth interpolated motion, a live fleet sidebar (battery bars, per-robot task status), a scrubbable timeline with event markers, and a live event feed. Verified visually via headless-browser screenshots at multiple points in playback -- task pickup markers, the blocked-aisle hazard overlay, and end-of-run "8/9 done, 1 remaining" states all render correctly.
+
+**Real result from this run:** 9 robots, 9 tasks, one dynamically blocked aisle mid-run, 0 collisions, complete in 13 ticks. Notably, PIBT routed around the blocked cell on its own without needing the task-reassignment safety net to fire -- a genuinely good sign, not a missed feature (the reassignment path is still separately tested in `tests/test_auction.py`).
+
+**To regenerate after any engine change:** `python scripts/export_demo_run.py`, then re-open `visuals/warehouse_demo.html` (the data is embedded at generation time, so the HTML must be rebuilt if the JSON changes -- see the file for the generation step).
