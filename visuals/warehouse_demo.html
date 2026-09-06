@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SIH26123 -- Edge Fleet Live Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-floor: #0B0E11;
+    --bg-aisle: #12161B;
+    --grid-line: #1C2128;
+    --shelf-base: #3D2E22;
+    --shelf-edge: #8B6F4E;
+    --blocked: #C0392B;
+    --text-primary: #E8E6E0;
+    --text-secondary: #8A8D93;
+    --text-muted: #565A61;
+    --accent: #FFB238;
+    --accent-dim: #6B4F1F;
+    --panel-bg: #14181D;
+    --panel-bg-2: #191D23;
+    --border: #232830;
+    --green: #6FD48A;
+    --amber: #F2A83C;
+    --red: #E8558F;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: #05070A; color: var(--text-primary);
+    font-family: 'Inter', -apple-system, sans-serif;
+    height: 100%;
+  }
+  .mono { font-family: 'IBM Plex Mono', 'Consolas', monospace; }
+  .app {
+    display: flex; flex-direction: column; height: 100vh; max-width: 1180px; margin: 0 auto;
+    border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--panel-bg);
+    flex-shrink: 0;
+  }
+  .title { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+  .title span { color: var(--text-muted); font-weight: 400; }
+  .stats { display: flex; gap: 28px; align-items: center; }
+  .stat { display: flex; flex-direction: column; align-items: flex-end; }
+  .stat .label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.03em; }
+  .stat .value { font-size: 18px; font-weight: 600; }
+  .stat .value.tick { color: var(--accent); }
+  .stat .value.ok { color: var(--green); }
+  .controls { display: flex; align-items: center; gap: 10px; }
+  button.playbtn {
+    width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel-bg-2); color: var(--accent); cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  button.playbtn:hover { border-color: var(--accent-dim); }
+  select.speed {
+    background: var(--panel-bg-2); color: var(--text-secondary); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; font-size: 12px; font-family: 'IBM Plex Mono', monospace;
+  }
+  main { display: flex; flex: 1; overflow: hidden; }
+  .canvas-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    background: var(--bg-floor); position: relative; overflow: auto;
+  }
+  canvas { display: block; }
+  aside {
+    width: 250px; flex-shrink: 0; background: var(--panel-bg); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .aside-head {
+    padding: 12px 16px; font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+  }
+  .fleet-list { overflow-y: auto; flex: 1; padding: 8px; }
+  .robot-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 8px;
+    margin-bottom: 2px;
+  }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .robot-info { flex: 1; min-width: 0; }
+  .robot-id { font-size: 12px; font-weight: 500; }
+  .robot-task { font-size: 11px; color: var(--text-muted); }
+  .batt-bar-track { width: 46px; height: 5px; border-radius: 3px; background: #232830; overflow: hidden; flex-shrink: 0; }
+  .batt-bar-fill { height: 100%; border-radius: 3px; }
+  .event-log {
+    border-top: 1px solid var(--border); max-height: 150px; overflow-y: auto; padding: 8px 16px;
+    font-size: 11px; color: var(--text-secondary);
+  }
+  .event-log .ev { padding: 3px 0; }
+  .event-log .ev .t { color: var(--accent); }
+  footer {
+    padding: 12px 20px; border-top: 1px solid var(--border); background: var(--panel-bg);
+    flex-shrink: 0; display: flex; align-items: center; gap: 14px;
+  }
+  .scrub-track {
+    flex: 1; height: 28px; position: relative; cursor: pointer;
+  }
+  .scrub-bg { position: absolute; top: 12px; left: 0; right: 0; height: 4px; background: #232830; border-radius: 2px; }
+  .scrub-fill { position: absolute; top: 12px; left: 0; height: 4px; background: var(--accent); border-radius: 2px; }
+  .scrub-handle {
+    position: absolute; top: 7px; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 0 3px rgba(255,178,56,0.2); transform: translateX(-7px);
+  }
+  .scrub-event {
+    position: absolute; top: 10px; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-muted); transform: translateX(-4px);
+  }
+  .time-label { font-size: 11px; color: var(--text-muted); min-width: 70px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">SIH26123 <span>&middot; edge fleet live monitor</span></div>
+    <div class="stats">
+      <div class="stat"><div class="label">tick</div><div class="value tick mono" id="tickVal">0</div></div>
+      <div class="stat"><div class="label">collisions</div><div class="value ok mono" id="collVal">0</div></div>
+      <div class="stat"><div class="label">tasks done</div><div class="value mono" id="taskVal">0/0</div></div>
+      <div class="controls">
+        <button class="playbtn" id="playBtn">&#9654;</button>
+        <select class="speed" id="speedSel">
+          <option value="900">0.5x</option>
+          <option value="450" selected>1x</option>
+          <option value="220">2x</option>
+          <option value="110">4x</option>
+        </select>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="canvas-wrap">
+      <canvas id="cv"></canvas>
+    </div>
+    <aside>
+      <div class="aside-head">FLEET &middot; 9 robots</div>
+      <div class="fleet-list" id="fleetList"></div>
+      <div class="event-log" id="eventLog"></div>
+    </aside>
+  </main>
+  <footer>
+    <button class="playbtn" id="playBtn2" style="width:28px;height:28px;font-size:11px;">&#9654;</button>
+    <div class="scrub-track" id="scrubTrack">
+      <div class="scrub-bg"></div>
+      <div class="scrub-fill" id="scrubFill"></div>
+      <div class="scrub-handle" id="scrubHandle"></div>
+    </div>
+    <div class="time-label mono" id="timeLabel">0 / 0</div>
+  </footer>
+</div>
+<script>
+const DATA = {"grid": {"width": 17, "height": 11, "layout": ["01010101010101010", "01010101010101010", "01010101010101010", "00000000000000000", "01010101010101010", "01010101010101010", "01010101010101010", "00000000000000000", "01010101010101010", "00000000000000000", "00000000000000000"], "blocked_cells": [[8, 7]]}, "pickup_cells": [[2, 0], [12, 0], [14, 2], [8, 2], [0, 0], [16, 2], [6, 0], [4, 2], [10, 0]], "frames": [{"tick": 0, "collisions": 0, "agents": [{"id": "R1", "x": 1, "y": 10, "battery": 100.0, "task": "T5"}, {"id": "R2", "x": 3, "y": 10, "battery": 100.0, "task": "T8"}, {"id": "R3", "x": 5, "y": 10, "battery": 100.0, "task": "T7"}, {"id": "R4", "x": 7, "y": 10, "battery": 100.0, "task": "T4"}, {"id": "R5", "x": 9, "y": 10, "battery": 100.0, "task": "T9"}, {"id": "R6", "x": 11, "y": 10, "battery": 100.0, "task": "T2"}, {"id": "R7", "x": 13, "y": 10, "battery": 100.0, "task": "T3"}, {"id": "R8", "x": 15, "y": 10, "battery": 100.0, "task": "T6"}, {"id": "R9", "x": 2, "y": 10, "battery": 100.0, "task": "T1"}]}, {"tick": 1, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 10, "battery": 99.9, "task": "T5"}, {"id": "R2", "x": 3, "y": 9, "battery": 99.9, "task": "T8"}, {"id": "R3", "x": 5, "y": 9, "battery": 99.9, "task": "T7"}, {"id": "R4", "x": 7, "y": 9, "battery": 99.9, "task": "T4"}, {"id": "R5", "x": 9, "y": 9, "battery": 99.9, "task": "T9"}, {"id": "R6", "x": 11, "y": 9, "battery": 99.9, "task": "T2"}, {"id": "R7", "x": 13, "y": 9, "battery": 99.9, "task": "T3"}, {"id": "R8", "x": 15, "y": 9, "battery": 99.9, "task": "T6"}, {"id": "R9", "x": 2, "y": 9, "battery": 99.9, "task": "T1"}]}, {"tick": 2, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 9, "battery": 99.8, "task": "T5"}, {"id": "R2", "x": 4, "y": 9, "battery": 99.8, "task": "T8"}, {"id": "R3", "x": 6, "y": 9, "battery": 99.8, "task": "T7"}, {"id": "R4", "x": 8, "y": 9, "battery": 99.8, "task": "T4"}, {"id": "R5", "x": 10, "y": 9, "battery": 99.8, "task": "T9"}, {"id": "R6", "x": 12, "y": 9, "battery": 99.8, "task": "T2"}, {"id": "R7", "x": 14, "y": 9, "battery": 99.8, "task": "T3"}, {"id": "R8", "x": 16, "y": 9, "battery": 99.8, "task": "T6"}, {"id": "R9", "x": 2, "y": 8, "battery": 99.8, "task": "T1"}]}, {"tick": 3, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 8, "battery": 99.8, "task": "T5"}, {"id": "R2", "x": 4, "y": 8, "battery": 99.8, "task": "T8"}, {"id": "R3", "x": 6, "y": 8, "battery": 99.8, "task": "T7"}, {"id": "R4", "x": 7, "y": 9, "battery": 99.8, "task": "T4"}, {"id": "R5", "x": 10, "y": 8, "battery": 99.8, "task": "T9"}, {"id": "R6", "x": 12, "y": 8, "battery": 99.8, "task": "T2"}, {"id": "R7", "x": 14, "y": 8, "battery": 99.8, "task": "T3"}, {"id": "R8", "x": 16, "y": 8, "battery": 99.8, "task": "T6"}, {"id": "R9", "x": 2, "y": 7, "battery": 99.8, "task": "T1"}]}, {"tick": 4, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 7, "battery": 99.7, "task": "T5"}, {"id": "R2", "x": 4, "y": 7, "battery": 99.7, "task": "T8"}, {"id": "R3", "x": 6, "y": 7, "battery": 99.7, "task": "T7"}, {"id": "R4", "x": 6, "y": 9, "battery": 99.7, "task": "T4"}, {"id": "R5", "x": 10, "y": 7, "battery": 99.7, "task": "T9"}, {"id": "R6", "x": 12, "y": 7, "battery": 99.7, "task": "T2"}, {"id": "R7", "x": 14, "y": 7, "battery": 99.7, "task": "T3"}, {"id": "R8", "x": 16, "y": 7, "battery": 99.7, "task": "T6"}, {"id": "R9", "x": 2, "y": 6, "battery": 99.7, "task": "T1"}]}, {"tick": 5, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 6, "battery": 99.6, "task": "T5"}, {"id": "R2", "x": 4, "y": 6, "battery": 99.6, "task": "T8"}, {"id": "R3", "x": 6, "y": 6, "battery": 99.6, "task": "T7"}, {"id": "R4", "x": 6, "y": 8, "battery": 99.6, "task": "T4"}, {"id": "R5", "x": 10, "y": 6, "battery": 99.6, "task": "T9"}, {"id": "R6", "x": 12, "y": 6, "battery": 99.6, "task": "T2"}, {"id": "R7", "x": 14, "y": 6, "battery": 99.6, "task": "T3"}, {"id": "R8", "x": 16, "y": 6, "battery": 99.6, "task": "T6"}, {"id": "R9", "x": 2, "y": 5, "battery": 99.6, "task": "T1"}]}, {"tick": 6, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 5, "battery": 99.5, "task": "T5"}, {"id": "R2", "x": 4, "y": 5, "battery": 99.5, "task": "T8"}, {"id": "R3", "x": 6, "y": 5, "battery": 99.5, "task": "T7"}, {"id": "R4", "x": 6, "y": 7, "battery": 99.5, "task": "T4"}, {"id": "R5", "x": 10, "y": 5, "battery": 99.5, "task": "T9"}, {"id": "R6", "x": 12, "y": 5, "battery": 99.5, "task": "T2"}, {"id": "R7", "x": 14, "y": 5, "battery": 99.5, "task": "T3"}, {"id": "R8", "x": 16, "y": 5, "battery": 99.5, "task": "T6"}, {"id": "R9", "x": 2, "y": 4, "battery": 99.5, "task": "T1"}]}, {"tick": 7, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 4, "battery": 99.4, "task": "T5"}, {"id": "R2", "x": 4, "y": 4, "battery": 99.4, "task": "T8"}, {"id": "R3", "x": 6, "y": 4, "battery": 99.4, "task": "T7"}, {"id": "R4", "x": 6, "y": 6, "battery": 99.4, "task": "T4"}, {"id": "R5", "x": 10, "y": 4, "battery": 99.4, "task": "T9"}, {"id": "R6", "x": 12, "y": 4, "battery": 99.4, "task": "T2"}, {"id": "R7", "x": 14, "y": 4, "battery": 99.4, "task": "T3"}, {"id": "R8", "x": 16, "y": 4, "battery": 99.4, "task": "T6"}, {"id": "R9", "x": 2, "y": 3, "battery": 99.4, "task": "T1"}]}, {"tick": 8, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 3, "battery": 99.4, "task": "T5"}, {"id": "R2", "x": 4, "y": 3, "battery": 99.4, "task": "T8"}, {"id": "R3", "x": 6, "y": 3, "battery": 99.4, "task": "T7"}, {"id": "R4", "x": 6, "y": 5, "battery": 99.4, "task": "T4"}, {"id": "R5", "x": 10, "y": 3, "battery": 99.4, "task": "T9"}, {"id": "R6", "x": 12, "y": 3, "battery": 99.4, "task": "T2"}, {"id": "R7", "x": 14, "y": 3, "battery": 99.4, "task": "T3"}, {"id": "R8", "x": 16, "y": 3, "battery": 99.4, "task": "T6"}, {"id": "R9", "x": 2, "y": 2, "battery": 99.4, "task": "T1"}]}, {"tick": 9, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 2, "battery": 99.3, "task": "T5"}, {"id": "R2", "x": 4, "y": 2, "battery": 99.3, "task": null}, {"id": "R3", "x": 6, "y": 2, "battery": 99.3, "task": "T7"}, {"id": "R4", "x": 6, "y": 4, "battery": 99.3, "task": "T4"}, {"id": "R5", "x": 10, "y": 2, "battery": 99.3, "task": "T9"}, {"id": "R6", "x": 12, "y": 2, "battery": 99.3, "task": "T2"}, {"id": "R7", "x": 14, "y": 2, "battery": 99.3, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.3, "task": null}, {"id": "R9", "x": 2, "y": 1, "battery": 99.3, "task": "T1"}]}, {"tick": 10, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 1, "battery": 99.2, "task": "T5"}, {"id": "R2", "x": 4, "y": 2, "battery": 99.3, "task": null}, {"id": "R3", "x": 6, "y": 1, "battery": 99.2, "task": "T7"}, {"id": "R4", "x": 6, "y": 3, "battery": 99.2, "task": "T4"}, {"id": "R5", "x": 10, "y": 1, "battery": 99.2, "task": "T9"}, {"id": "R6", "x": 12, "y": 1, "battery": 99.2, "task": "T2"}, {"id": "R7", "x": 14, "y": 2, "battery": 99.3, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.3, "task": null}, {"id": "R9", "x": 2, "y": 0, "battery": 99.2, "task": null}]}, {"tick": 11, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 0, "battery": 99.1, "task": null}, {"id": "R2", "x": 4, "y": 2, "battery": 99.2, "task": null}, {"id": "R3", "x": 6, "y": 0, "battery": 99.1, "task": null}, {"id": "R4", "x": 7, "y": 3, "battery": 99.1, "task": "T4"}, {"id": "R5", "x": 10, "y": 0, "battery": 99.1, "task": null}, {"id": "R6", "x": 12, "y": 0, "battery": 99.1, "task": null}, {"id": "R7", "x": 14, "y": 2, "battery": 99.2, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.2, "task": null}, {"id": "R9", "x": 2, "y": 0, "battery": 99.2, "task": null}]}, {"tick": 12, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 0, "battery": 99.1, "task": null}, {"id": "R2", "x": 4, "y": 2, "battery": 99.2, "task": null}, {"id": "R3", "x": 6, "y": 0, "battery": 99.1, "task": null}, {"id": "R4", "x": 8, "y": 3, "battery": 99.0, "task": "T4"}, {"id": "R5", "x": 10, "y": 0, "battery": 99.1, "task": null}, {"id": "R6", "x": 12, "y": 0, "battery": 99.1, "task": null}, {"id": "R7", "x": 14, "y": 2, "battery": 99.2, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.2, "task": null}, {"id": "R9", "x": 2, "y": 0, "battery": 99.2, "task": null}]}, {"tick": 13, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 0, "battery": 99.1, "task": null}, {"id": "R2", "x": 4, "y": 2, "battery": 99.2, "task": null}, {"id": "R3", "x": 6, "y": 0, "battery": 99.1, "task": null}, {"id": "R4", "x": 8, "y": 2, "battery": 99.0, "task": null}, {"id": "R5", "x": 10, "y": 0, "battery": 99.1, "task": null}, {"id": "R6", "x": 12, "y": 0, "battery": 99.1, "task": null}, {"id": "R7", "x": 14, "y": 2, "battery": 99.2, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.2, "task": null}, {"id": "R9", "x": 2, "y": 0, "battery": 99.1, "task": null}]}], "events": [{"tick": 3, "type": "aisle_blocked", "cell": [8, 7]}, {"tick": 9, "type": "task_completed", "task": "T8", "agent": "R2"}, {"tick": 9, "type": "task_completed", "task": "T3", "agent": "R7"}, {"tick": 9, "type": "task_completed", "task": "T6", "agent": "R8"}, {"tick": 10, "type": "task_completed", "task": "T1", "agent": "R9"}, {"tick": 11, "type": "task_completed", "task": "T5", "agent": "R1"}, {"tick": 11, "type": "task_completed", "task": "T7", "agent": "R3"}, {"tick": 11, "type": "task_completed", "task": "T9", "agent": "R5"}, {"tick": 11, "type": "task_completed", "task": "T2", "agent": "R6"}, {"tick": 13, "type": "task_completed", "task": "T4", "agent": "R4"}], "meta": {"total_ticks": 13, "collisions": 0, "robot_count": 9, "task_count": 9}};
+const ROBOT_COLORS = {"R1": "#4FD1E8", "R2": "#F2A83C", "R3": "#E8558F", "R4": "#6FD48A", "R5": "#9C7CF0", "R6": "#F0754A", "R7": "#5B8DEF", "R8": "#B8D93C", "R9": "#45C4A0", "R10": "#E0C34C"};
+
+const grid = DATA.grid;
+const frames = DATA.frames;
+const events = DATA.events;
+const pickupCells = DATA.pickup_cells;
+
+const CELL = 42;
+const canvas = document.getElementById('cv');
+const ctx = canvas.getContext('2d');
+canvas.width = grid.width * CELL;
+canvas.height = grid.height * CELL;
+
+let currentTick = 0;
+let playing = true;
+let msPerTick = 450;
+let lastStepTime = performance.now();
+let animFrac = 0; // 0..1 interpolation fraction toward next tick
+
+const completedTasks = new Set();
+const taskOwnerAtCompletion = {};
+for (const e of events) {
+  if (e.type === 'task_completed') { }
+}
+
+function frameAt(i) { return frames[Math.max(0, Math.min(frames.length - 1, i))]; }
+
+function isBlockedAt(tick, x, y) {
+  for (const e of events) {
+    if (e.type === 'aisle_blocked' && e.tick <= tick && e.cell[0] === x && e.cell[1] === y) return true;
+  }
+  return false;
+}
+
+function activeTasksAt(tick) {
+  const done = new Set();
+  for (const e of events) if (e.type === 'task_completed' && e.tick <= tick) done.add(e.task);
+  return done;
+}
+
+function drawFloor(tick) {
+  ctx.fillStyle = 'var(--bg-floor)';
+  ctx.fillStyle = '#0B0E11';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let y = 0; y < grid.height; y++) {
+    for (let x = 0; x < grid.width; x++) {
+      const ch = grid.layout[y][x];
+      const px = x * CELL, py = y * CELL;
+      if (ch === '1') {
+        const blocked = isBlockedAt(tick, x, y);
+        ctx.fillStyle = blocked ? '#5A2A22' : '#3D2E22';
+        ctx.fillRect(px + 2, py + 2, CELL - 4, CELL - 4);
+        ctx.fillStyle = blocked ? '#C0392B' : '#8B6F4E';
+        ctx.fillRect(px + 2, py + 2, CELL - 4, 5);
+      } else {
+        ctx.fillStyle = '#12161B';
+        ctx.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+      }
+    }
+  }
+  // dynamically-blocked aisle cell (not a static shelf) drawn as hazard overlay
+  for (const e of events) {
+    if (e.type === 'aisle_blocked' && e.tick <= tick) {
+      const [bx, by] = e.cell;
+      if (grid.layout[by][bx] !== '1') {
+        const px = bx * CELL, py = by * CELL;
+        ctx.fillStyle = 'rgba(192,57,43,0.35)';
+        ctx.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+        ctx.strokeStyle = '#C0392B'; ctx.lineWidth = 2;
+        ctx.strokeRect(px + 3, py + 3, CELL - 6, CELL - 6);
+      }
+    }
+  }
+}
+
+function drawTasks(tick) {
+  const done = activeTasksAt(tick);
+  pickupCells.forEach((cell, i) => {
+    const taskId = 'T' + (i + 1);
+    if (done.has(taskId)) return;
+    const [x, y] = cell;
+    const cx = x * CELL + CELL / 2, cy = y * CELL + CELL / 2;
+    const pulse = 0.5 + 0.5 * Math.sin(tick * 0.6 + i);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 9 + pulse * 3, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,178,56,' + (0.35 + pulse * 0.35) + ')';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFB238';
+    ctx.fill();
+  });
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function drawRobots(idx, frac) {
+  const f0 = frameAt(idx), f1 = frameAt(idx + 1);
+  f0.agents.forEach((a0) => {
+    const a1 = f1.agents.find(a => a.id === a0.id) || a0;
+    const x = lerp(a0.x, a1.x, frac), y = lerp(a0.y, a1.y, frac);
+    const cx = x * CELL + CELL / 2, cy = y * CELL + CELL / 2;
+    const color = ROBOT_COLORS[a0.id] || '#ccc';
+
+    // motion trail
+    if (a0.x !== a1.x || a0.y !== a1.y) {
+      ctx.beginPath();
+      ctx.moveTo(a0.x * CELL + CELL/2, a0.y * CELL + CELL/2);
+      ctx.lineTo(cx, cy);
+      ctx.strokeStyle = color + '55';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, CELL / 2 - 7, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.stroke();
+
+    ctx.font = '600 10px IBM Plex Mono, monospace';
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(a0.id, cx, cy + 1);
+
+    // battery dot
+    const battColor = a0.battery > 60 ? '#6FD48A' : a0.battery > 25 ? '#F2A83C' : '#E8558F';
+    ctx.beginPath();
+    ctx.arc(cx, cy - CELL / 2 + 8, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = battColor;
+    ctx.fill();
+  });
+}
+
+function render() {
+  const idx = Math.floor(currentTick);
+  const frac = currentTick - idx;
+  const f = frameAt(idx);
+  drawFloor(idx);
+  drawTasks(idx);
+  drawRobots(idx, frac);
+
+  document.getElementById('tickVal').textContent = idx;
+  document.getElementById('collVal').textContent = f.collisions;
+  const doneCount = activeTasksAt(idx).size;
+  document.getElementById('taskVal').textContent = doneCount + '/' + pickupCells.length;
+
+  updateScrub(idx);
+}
+
+function renderFleetList(idx) {
+  const f = frameAt(idx);
+  const list = document.getElementById('fleetList');
+  list.innerHTML = '';
+  f.agents.forEach(a => {
+    const color = ROBOT_COLORS[a.id] || '#ccc';
+    const battColor = a.battery > 60 ? '#6FD48A' : a.battery > 25 ? '#F2A83C' : '#E8558F';
+    const row = document.createElement('div');
+    row.className = 'robot-row';
+    row.innerHTML = `
+      <div class="swatch" style="background:${color}"></div>
+      <div class="robot-info">
+        <div class="robot-id mono">${a.id}</div>
+        <div class="robot-task">${a.task ? 'task ' + a.task : 'idle'}</div>
+      </div>
+      <div class="batt-bar-track"><div class="batt-bar-fill" style="width:${a.battery}%;background:${battColor}"></div></div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function renderEventLog(idx) {
+  const log = document.getElementById('eventLog');
+  const shown = events.filter(e => e.tick <= idx).slice(-6).reverse();
+  log.innerHTML = shown.map(e => {
+    let text = '';
+    if (e.type === 'task_completed') text = `${e.agent} completed ${e.task}`;
+    else if (e.type === 'aisle_blocked') text = `aisle blocked at (${e.cell[0]},${e.cell[1]})`;
+    else if (e.type === 'task_released') text = `${e.task} released -- robot stuck`;
+    else if (e.type === 'task_reassigned') text = `${e.task} reassigned to ${e.agent}`;
+    return `<div class="ev"><span class="t mono">t${e.tick}</span> &nbsp;${text}</div>`;
+  }).join('');
+}
+
+function updateScrub(idx) {
+  const pct = idx / (frames.length - 1);
+  document.getElementById('scrubFill').style.width = (pct * 100) + '%';
+  document.getElementById('scrubHandle').style.left = (pct * 100) + '%';
+  document.getElementById('timeLabel').textContent = idx + ' / ' + (frames.length - 1);
+}
+
+function setupScrubEvents() {
+  const track = document.getElementById('scrubTrack');
+  events.forEach(e => {
+    if (e.tick === 0) return;
+    const pct = e.tick / (frames.length - 1);
+    const dot = document.createElement('div');
+    dot.className = 'scrub-event';
+    dot.style.left = (pct * 100) + '%';
+    track.appendChild(dot);
+  });
+  let dragging = false;
+  const seek = (clientX) => {
+    const rect = track.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    currentTick = pct * (frames.length - 1);
+    renderFleetList(Math.floor(currentTick));
+    renderEventLog(Math.floor(currentTick));
+    render();
+  };
+  track.addEventListener('mousedown', e => { dragging = true; seek(e.clientX); playing = false; updatePlayIcon(); });
+  window.addEventListener('mousemove', e => { if (dragging) seek(e.clientX); });
+  window.addEventListener('mouseup', () => dragging = false);
+}
+
+function updatePlayIcon() {
+  const icon = playing ? '&#10074;&#10074;' : '&#9654;';
+  document.getElementById('playBtn').innerHTML = icon;
+  document.getElementById('playBtn2').innerHTML = icon;
+}
+
+function togglePlay() {
+  playing = !playing;
+  if (playing && currentTick >= frames.length - 1) currentTick = 0;
+  updatePlayIcon();
+}
+
+document.getElementById('playBtn').addEventListener('click', togglePlay);
+document.getElementById('playBtn2').addEventListener('click', togglePlay);
+document.getElementById('speedSel').addEventListener('change', (e) => { msPerTick = parseInt(e.target.value); });
+
+setupScrubEvents();
+
+function loop(now) {
+  const elapsed = now - lastStepTime;
+  if (playing) {
+    currentTick += elapsed / msPerTick;
+    if (currentTick >= frames.length - 1) { currentTick = frames.length - 1; playing = false; updatePlayIcon(); }
+  }
+  lastStepTime = now;
+  render();
+  renderFleetList(Math.floor(currentTick));
+  renderEventLog(Math.floor(currentTick));
+  requestAnimationFrame(loop);
+}
+updatePlayIcon();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
