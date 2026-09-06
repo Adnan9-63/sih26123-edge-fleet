@@ -33,6 +33,26 @@ DEFAULT_LAYOUT = [
 ]
 
 
+def _generate_large_layout(num_shelf_cols: int = 8, shelf_rows: int = 9,
+                            cross_aisle_every: int = 4, staging_rows: int = 2) -> list[str]:
+    """A larger, more realistic warehouse floor for demoing bigger fleets
+    (8-10+ robots): shelf columns separated by single-width aisles (many
+    parallel choke points instead of DEFAULT_LAYOUT's three), periodic
+    horizontal cross-aisles so robots can switch columns, and an open
+    staging/dropoff zone along the bottom. Built for the visual demo, not
+    a replacement for DEFAULT_LAYOUT -- existing tests are pinned to
+    DEFAULT_LAYOUT's exact coordinates and must keep using it."""
+    width = num_shelf_cols * 2 + 1
+    rows = []
+    for r in range(shelf_rows):
+        if r % cross_aisle_every == cross_aisle_every - 1:
+            rows.append("0" * width)
+        else:
+            rows.append("".join("1" if c % 2 == 1 else "0" for c in range(width)))
+    rows.extend(["0" * width] * staging_rows)
+    return rows
+
+
 @dataclass
 class WarehouseGrid:
     layout: tuple[str, ...]
@@ -45,6 +65,12 @@ class WarehouseGrid:
     @classmethod
     def default(cls) -> "WarehouseGrid":
         return cls(tuple(DEFAULT_LAYOUT))
+
+    @classmethod
+    def large(cls) -> "WarehouseGrid":
+        """Bigger floor plan for the multi-robot visual demo -- see
+        _generate_large_layout's docstring."""
+        return cls(tuple(_generate_large_layout()))
 
     @property
     def height(self) -> int:
