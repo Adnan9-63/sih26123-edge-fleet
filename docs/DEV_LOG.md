@@ -256,3 +256,13 @@ passing fleet-wide.
 **Real result from this run:** 9 robots, 9 tasks, one dynamically blocked aisle mid-run, 0 collisions, complete in 13 ticks. Notably, PIBT routed around the blocked cell on its own without needing the task-reassignment safety net to fire -- a genuinely good sign, not a missed feature (the reassignment path is still separately tested in `tests/test_auction.py`).
 
 **To regenerate after any engine change:** `python scripts/export_demo_run.py`, then re-open `visuals/warehouse_demo.html` (the data is embedded at generation time, so the HTML must be rebuilt if the JSON changes -- see the file for the generation step).
+
+---
+
+## Isometric upgrade to the visual demo
+
+Upgraded `visuals/warehouse_demo.html` from flat top-down to an isometric ("2.5D") view -- real depth on the shelf racks (proper 3-face isometric boxes with gradient shading), robots with grounding shadows, motion trails, all rendered on a pure Canvas 2D isometric projection (no WebGL/Three.js dependency added).
+
+**Deliberate design decision, worth keeping:** a full 3D camera view was considered and rejected -- real warehouse fleet-ops software is top-down/isometric specifically because a 3D camera can let one object visually hide another, which is the opposite of what a coordination demo should ever do. To make sure this version never has that problem even with isometric depth: floor and shelf geometry render first (back-to-front), then EVERY robot renders in an unconditional second pass on top, sorted only by relative position to each other. A robot can never be hidden behind a shelf, structurally, not by luck. Verified visually via headless-browser screenshots at several points in playback, including the exact tick where the most shelf rows are between the camera and the robots.
+
+Same underlying `visuals/demo_run.json` -- no simulation change, purely a rendering upgrade.
