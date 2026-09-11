@@ -8,81 +8,62 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-floor: #05070A;
-    --text-primary: #E8E6E0;
-    --text-secondary: #8A8D93;
-    --text-muted: #565A61;
-    --accent: #FFB238;
-    --accent-dim: #6B4F1F;
-    --panel-bg: #14181D;
-    --panel-bg-2: #191D23;
-    --border: #232830;
-    --green: #6FD48A;
+    --text-primary: #E8E6E0; --text-secondary: #8A8D93; --text-muted: #565A61;
+    --accent: #FFB238; --accent-dim: #6B4F1F;
+    --panel-bg: #14181D; --panel-bg-2: #191D23; --border: #232830; --green: #6FD48A;
   }
   * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0; background: #05070A; color: var(--text-primary);
-    font-family: 'Inter', -apple-system, sans-serif; height: 100%;
+  html, body { margin:0; padding:0; background:#05070A; color:var(--text-primary); font-family:'Inter',-apple-system,sans-serif; height:100%; }
+  .mono { font-family:'IBM Plex Mono','Consolas',monospace; }
+  .app { display:flex; flex-direction:column; height:100vh; max-width:1180px; margin:0 auto; border-left:1px solid var(--border); border-right:1px solid var(--border); }
+  header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--border); background:var(--panel-bg); flex-shrink:0; flex-wrap:wrap; gap:10px; }
+  .title { font-size:15px; font-weight:500; }
+  .title span { color:var(--text-muted); font-weight:400; }
+  .stats { display:flex; gap:22px; align-items:center; }
+  .stat { display:flex; flex-direction:column; align-items:flex-end; }
+  .stat .label { font-size:10px; color:var(--text-muted); letter-spacing:0.03em; }
+  .stat .value { font-size:17px; font-weight:600; }
+  .stat .value.tick { color:var(--accent); }
+  .stat .value.ok { color:var(--green); }
+  .controls { display:flex; align-items:center; gap:8px; }
+  button.playbtn, button.genbtn {
+    height:34px; border-radius:8px; border:1px solid var(--border); background:var(--panel-bg-2);
+    color:var(--accent); cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; padding:0 10px;
   }
-  .mono { font-family: 'IBM Plex Mono', 'Consolas', monospace; }
-  .app {
-    display: flex; flex-direction: column; height: 100vh; max-width: 1180px; margin: 0 auto;
-    border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+  button.playbtn { width:34px; padding:0; }
+  button.genbtn { font-family:'Inter',sans-serif; font-weight:500; color:#05070A; background:var(--accent); border:none; gap:6px; }
+  button.genbtn:hover { background:#ffc25c; }
+  button.playbtn:hover { border-color:var(--accent-dim); }
+  select, input.robotcount {
+    background:var(--panel-bg-2); color:var(--text-secondary); border:1px solid var(--border);
+    border-radius:6px; padding:6px 8px; font-size:12px; font-family:'IBM Plex Mono',monospace; height:34px;
   }
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--panel-bg);
-    flex-shrink: 0;
-  }
-  .title { font-size: 15px; font-weight: 500; }
-  .title span { color: var(--text-muted); font-weight: 400; }
-  .stats { display: flex; gap: 28px; align-items: center; }
-  .stat { display: flex; flex-direction: column; align-items: flex-end; }
-  .stat .label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.03em; }
-  .stat .value { font-size: 18px; font-weight: 600; }
-  .stat .value.tick { color: var(--accent); }
-  .stat .value.ok { color: var(--green); }
-  .controls { display: flex; align-items: center; gap: 10px; }
-  button.playbtn {
-    width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--panel-bg-2); color: var(--accent); cursor: pointer; font-size: 14px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  button.playbtn:hover { border-color: var(--accent-dim); }
-  select.speed {
-    background: var(--panel-bg-2); color: var(--text-secondary); border: 1px solid var(--border);
-    border-radius: 6px; padding: 6px 8px; font-size: 12px; font-family: 'IBM Plex Mono', monospace;
-  }
-  main { display: flex; flex: 1; overflow: hidden; }
-  .canvas-wrap {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at center, #0d1116 0%, #05070A 70%);
-    position: relative; overflow: auto;
-  }
-  canvas { display: block; }
-  aside {
-    width: 250px; flex-shrink: 0; background: var(--panel-bg); border-left: 1px solid var(--border);
-    display: flex; flex-direction: column; overflow: hidden;
-  }
-  .aside-head { padding: 12px 16px; font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em; border-bottom: 1px solid var(--border); }
-  .fleet-list { overflow-y: auto; flex: 1; padding: 8px; }
-  .robot-row { display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 8px; margin-bottom: 2px; }
-  .swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .robot-info { flex: 1; min-width: 0; }
-  .robot-id { font-size: 12px; font-weight: 500; }
-  .robot-task { font-size: 11px; color: var(--text-muted); }
-  .batt-bar-track { width: 46px; height: 5px; border-radius: 3px; background: #232830; overflow: hidden; flex-shrink: 0; }
-  .batt-bar-fill { height: 100%; border-radius: 3px; }
-  .event-log { border-top: 1px solid var(--border); max-height: 150px; overflow-y: auto; padding: 8px 16px; font-size: 11px; color: var(--text-secondary); }
-  .event-log .ev { padding: 3px 0; }
-  .event-log .ev .t { color: var(--accent); }
-  footer { padding: 12px 20px; border-top: 1px solid var(--border); background: var(--panel-bg); flex-shrink: 0; display: flex; align-items: center; gap: 14px; }
-  .scrub-track { flex: 1; height: 28px; position: relative; cursor: pointer; }
-  .scrub-bg { position: absolute; top: 12px; left: 0; right: 0; height: 4px; background: #232830; border-radius: 2px; }
-  .scrub-fill { position: absolute; top: 12px; left: 0; height: 4px; background: var(--accent); border-radius: 2px; }
-  .scrub-handle { position: absolute; top: 7px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(255,178,56,0.2); transform: translateX(-7px); }
-  .scrub-event { position: absolute; top: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); transform: translateX(-4px); }
-  .time-label { font-size: 11px; color: var(--text-muted); min-width: 70px; text-align: right; }
+  input.robotcount { width:46px; text-align:center; }
+  .hint { font-size:11px; color:var(--text-muted); padding:8px 20px; border-bottom:1px solid var(--border); background:#0d1116; }
+  .hint b { color:var(--accent); }
+  main { display:flex; flex:1; overflow:hidden; }
+  .canvas-wrap { flex:1; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center,#0d1116 0%,#05070A 70%); position:relative; overflow:auto; }
+  canvas { display:block; cursor:pointer; }
+  aside { width:250px; flex-shrink:0; background:var(--panel-bg); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .aside-head { padding:12px 16px; font-size:11px; color:var(--text-muted); letter-spacing:0.04em; border-bottom:1px solid var(--border); }
+  .fleet-list { overflow-y:auto; flex:1; padding:8px; }
+  .robot-row { display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:8px; margin-bottom:2px; }
+  .swatch { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .robot-info { flex:1; min-width:0; }
+  .robot-id { font-size:12px; font-weight:500; }
+  .robot-task { font-size:11px; color:var(--text-muted); }
+  .batt-bar-track { width:46px; height:5px; border-radius:3px; background:#232830; overflow:hidden; flex-shrink:0; }
+  .batt-bar-fill { height:100%; border-radius:3px; }
+  .event-log { border-top:1px solid var(--border); max-height:150px; overflow-y:auto; padding:8px 16px; font-size:11px; color:var(--text-secondary); }
+  .event-log .ev { padding:3px 0; }
+  .event-log .ev .t { color:var(--accent); }
+  footer { padding:12px 20px; border-top:1px solid var(--border); background:var(--panel-bg); flex-shrink:0; display:flex; align-items:center; gap:14px; }
+  .scrub-track { flex:1; height:28px; position:relative; cursor:pointer; }
+  .scrub-bg { position:absolute; top:12px; left:0; right:0; height:4px; background:#232830; border-radius:2px; }
+  .scrub-fill { position:absolute; top:12px; left:0; height:4px; background:var(--accent); border-radius:2px; }
+  .scrub-handle { position:absolute; top:7px; width:14px; height:14px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 3px rgba(255,178,56,0.2); transform:translateX(-7px); }
+  .scrub-event { position:absolute; top:10px; width:8px; height:8px; border-radius:50%; background:var(--text-muted); transform:translateX(-4px); }
+  .time-label { font-size:11px; color:var(--text-muted); min-width:70px; text-align:right; }
 </style>
 </head>
 <body>
@@ -94,6 +75,8 @@
       <div class="stat"><div class="label">collisions</div><div class="value ok mono" id="collVal">0</div></div>
       <div class="stat"><div class="label">tasks done</div><div class="value mono" id="taskVal">0/0</div></div>
       <div class="controls">
+        <input class="robotcount mono" id="robotCount" type="number" min="6" max="10" value="9">
+        <button class="genbtn" id="genBtn">&#9889; New Run</button>
         <button class="playbtn" id="playBtn">&#9654;</button>
         <select class="speed" id="speedSel">
           <option value="900">0.5x</option>
@@ -104,10 +87,11 @@
       </div>
     </div>
   </header>
+  <div class="hint">Live simulation &mdash; runs the real PIBT + auction algorithm in your browser. Click <b>New Run</b> for a fresh randomized scenario, or click any open aisle tile while it's running to block it and watch the fleet re-route live.</div>
   <main>
     <div class="canvas-wrap"><canvas id="cv"></canvas></div>
     <aside>
-      <div class="aside-head">FLEET &middot; 9 robots</div>
+      <div class="aside-head" id="fleetHead">FLEET</div>
       <div class="fleet-list" id="fleetList"></div>
       <div class="event-log" id="eventLog"></div>
     </aside>
@@ -123,28 +107,285 @@
   </footer>
 </div>
 <script>
-const DATA = {"grid": {"width": 17, "height": 11, "layout": ["01010101010101010", "01010101010101010", "01010101010101010", "00000000000000000", "01010101010101010", "01010101010101010", "01010101010101010", "00000000000000000", "01010101010101010", "00000000000000000", "00000000000000000"], "blocked_cells": [[8, 7]]}, "pickup_cells": [[2, 0], [12, 0], [14, 2], [8, 2], [0, 0], [16, 2], [6, 0], [4, 2], [10, 0]], "frames": [{"tick": 0, "collisions": 0, "agents": [{"id": "R1", "x": 1, "y": 10, "battery": 100.0, "task": "T5"}, {"id": "R2", "x": 3, "y": 10, "battery": 100.0, "task": "T8"}, {"id": "R3", "x": 5, "y": 10, "battery": 100.0, "task": "T7"}, {"id": "R4", "x": 7, "y": 10, "battery": 100.0, "task": "T4"}, {"id": "R5", "x": 9, "y": 10, "battery": 100.0, "task": "T9"}, {"id": "R6", "x": 11, "y": 10, "battery": 100.0, "task": "T2"}, {"id": "R7", "x": 13, "y": 10, "battery": 100.0, "task": "T3"}, {"id": "R8", "x": 15, "y": 10, "battery": 100.0, "task": "T6"}, {"id": "R9", "x": 2, "y": 10, "battery": 100.0, "task": "T1"}]}, {"tick": 1, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 10, "battery": 99.9, "task": "T5"}, {"id": "R2", "x": 3, "y": 9, "battery": 99.9, "task": "T8"}, {"id": "R3", "x": 5, "y": 9, "battery": 99.9, "task": "T7"}, {"id": "R4", "x": 7, "y": 9, "battery": 99.9, "task": "T4"}, {"id": "R5", "x": 9, "y": 9, "battery": 99.9, "task": "T9"}, {"id": "R6", "x": 11, "y": 9, "battery": 99.9, "task": "T2"}, {"id": "R7", "x": 13, "y": 9, "battery": 99.9, "task": "T3"}, {"id": "R8", "x": 15, "y": 9, "battery": 99.9, "task": "T6"}, {"id": "R9", "x": 2, "y": 9, "battery": 99.9, "task": "T1"}]}, {"tick": 2, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 9, "battery": 99.8, "task": "T5"}, {"id": "R2", "x": 4, "y": 9, "battery": 99.8, "task": "T8"}, {"id": "R3", "x": 6, "y": 9, "battery": 99.8, "task": "T7"}, {"id": "R4", "x": 8, "y": 9, "battery": 99.8, "task": "T4"}, {"id": "R5", "x": 10, "y": 9, "battery": 99.8, "task": "T9"}, {"id": "R6", "x": 12, "y": 9, "battery": 99.8, "task": "T2"}, {"id": "R7", "x": 14, "y": 9, "battery": 99.8, "task": "T3"}, {"id": "R8", "x": 16, "y": 9, "battery": 99.8, "task": "T6"}, {"id": "R9", "x": 2, "y": 8, "battery": 99.8, "task": "T1"}]}, {"tick": 3, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 8, "battery": 99.8, "task": "T5"}, {"id": "R2", "x": 4, "y": 8, "battery": 99.8, "task": "T8"}, {"id": "R3", "x": 6, "y": 8, "battery": 99.8, "task": "T7"}, {"id": "R4", "x": 7, "y": 9, "battery": 99.8, "task": "T4"}, {"id": "R5", "x": 10, "y": 8, "battery": 99.8, "task": "T9"}, {"id": "R6", "x": 12, "y": 8, "battery": 99.8, "task": "T2"}, {"id": "R7", "x": 14, "y": 8, "battery": 99.8, "task": "T3"}, {"id": "R8", "x": 16, "y": 8, "battery": 99.8, "task": "T6"}, {"id": "R9", "x": 2, "y": 7, "battery": 99.8, "task": "T1"}]}, {"tick": 4, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 7, "battery": 99.7, "task": "T5"}, {"id": "R2", "x": 4, "y": 7, "battery": 99.7, "task": "T8"}, {"id": "R3", "x": 6, "y": 7, "battery": 99.7, "task": "T7"}, {"id": "R4", "x": 6, "y": 9, "battery": 99.7, "task": "T4"}, {"id": "R5", "x": 10, "y": 7, "battery": 99.7, "task": "T9"}, {"id": "R6", "x": 12, "y": 7, "battery": 99.7, "task": "T2"}, {"id": "R7", "x": 14, "y": 7, "battery": 99.7, "task": "T3"}, {"id": "R8", "x": 16, "y": 7, "battery": 99.7, "task": "T6"}, {"id": "R9", "x": 2, "y": 6, "battery": 99.7, "task": "T1"}]}, {"tick": 5, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 6, "battery": 99.6, "task": "T5"}, {"id": "R2", "x": 4, "y": 6, "battery": 99.6, "task": "T8"}, {"id": "R3", "x": 6, "y": 6, "battery": 99.6, "task": "T7"}, {"id": "R4", "x": 6, "y": 8, "battery": 99.6, "task": "T4"}, {"id": "R5", "x": 10, "y": 6, "battery": 99.6, "task": "T9"}, {"id": "R6", "x": 12, "y": 6, "battery": 99.6, "task": "T2"}, {"id": "R7", "x": 14, "y": 6, "battery": 99.6, "task": "T3"}, {"id": "R8", "x": 16, "y": 6, "battery": 99.6, "task": "T6"}, {"id": "R9", "x": 2, "y": 5, "battery": 99.6, "task": "T1"}]}, {"tick": 6, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 5, "battery": 99.5, "task": "T5"}, {"id": "R2", "x": 4, "y": 5, "battery": 99.5, "task": "T8"}, {"id": "R3", "x": 6, "y": 5, "battery": 99.5, "task": "T7"}, {"id": "R4", "x": 6, "y": 7, "battery": 99.5, "task": "T4"}, {"id": "R5", "x": 10, "y": 5, "battery": 99.5, "task": "T9"}, {"id": "R6", "x": 12, "y": 5, "battery": 99.5, "task": "T2"}, {"id": "R7", "x": 14, "y": 5, "battery": 99.5, "task": "T3"}, {"id": "R8", "x": 16, "y": 5, "battery": 99.5, "task": "T6"}, {"id": "R9", "x": 2, "y": 4, "battery": 99.5, "task": "T1"}]}, {"tick": 7, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 4, "battery": 99.4, "task": "T5"}, {"id": "R2", "x": 4, "y": 4, "battery": 99.4, "task": "T8"}, {"id": "R3", "x": 6, "y": 4, "battery": 99.4, "task": "T7"}, {"id": "R4", "x": 6, "y": 6, "battery": 99.4, "task": "T4"}, {"id": "R5", "x": 10, "y": 4, "battery": 99.4, "task": "T9"}, {"id": "R6", "x": 12, "y": 4, "battery": 99.4, "task": "T2"}, {"id": "R7", "x": 14, "y": 4, "battery": 99.4, "task": "T3"}, {"id": "R8", "x": 16, "y": 4, "battery": 99.4, "task": "T6"}, {"id": "R9", "x": 2, "y": 3, "battery": 99.4, "task": "T1"}]}, {"tick": 8, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 3, "battery": 99.4, "task": "T5"}, {"id": "R2", "x": 4, "y": 3, "battery": 99.4, "task": "T8"}, {"id": "R3", "x": 6, "y": 3, "battery": 99.4, "task": "T7"}, {"id": "R4", "x": 6, "y": 5, "battery": 99.4, "task": "T4"}, {"id": "R5", "x": 10, "y": 3, "battery": 99.4, "task": "T9"}, {"id": "R6", "x": 12, "y": 3, "battery": 99.4, "task": "T2"}, {"id": "R7", "x": 14, "y": 3, "battery": 99.4, "task": "T3"}, {"id": "R8", "x": 16, "y": 3, "battery": 99.4, "task": "T6"}, {"id": "R9", "x": 2, "y": 2, "battery": 99.4, "task": "T1"}]}, {"tick": 9, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 2, "battery": 99.3, "task": "T5"}, {"id": "R2", "x": 4, "y": 2, "battery": 99.3, "task": null}, {"id": "R3", "x": 6, "y": 2, "battery": 99.3, "task": "T7"}, {"id": "R4", "x": 6, "y": 4, "battery": 99.3, "task": "T4"}, {"id": "R5", "x": 10, "y": 2, "battery": 99.3, "task": "T9"}, {"id": "R6", "x": 12, "y": 2, "battery": 99.3, "task": "T2"}, {"id": "R7", "x": 14, "y": 2, "battery": 99.3, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.3, "task": null}, {"id": "R9", "x": 2, "y": 1, "battery": 99.3, "task": "T1"}]}, {"tick": 10, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 1, "battery": 99.2, "task": "T5"}, {"id": "R2", "x": 4, "y": 2, "battery": 99.3, "task": null}, {"id": "R3", "x": 6, "y": 1, "battery": 99.2, "task": "T7"}, {"id": "R4", "x": 6, "y": 3, "battery": 99.2, "task": "T4"}, {"id": "R5", "x": 10, "y": 1, "battery": 99.2, "task": "T9"}, {"id": "R6", "x": 12, "y": 1, "battery": 99.2, "task": "T2"}, {"id": "R7", "x": 14, "y": 2, "battery": 99.3, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.3, "task": null}, {"id": "R9", "x": 2, "y": 0, "battery": 99.2, "task": null}]}, {"tick": 11, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 0, "battery": 99.1, "task": null}, {"id": "R2", "x": 4, "y": 2, "battery": 99.2, "task": null}, {"id": "R3", "x": 6, "y": 0, "battery": 99.1, "task": null}, {"id": "R4", "x": 7, "y": 3, "battery": 99.1, "task": "T4"}, {"id": "R5", "x": 10, "y": 0, "battery": 99.1, "task": null}, {"id": "R6", "x": 12, "y": 0, "battery": 99.1, "task": null}, {"id": "R7", "x": 14, "y": 2, "battery": 99.2, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.2, "task": null}, {"id": "R9", "x": 2, "y": 0, "battery": 99.2, "task": null}]}, {"tick": 12, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 0, "battery": 99.1, "task": null}, {"id": "R2", "x": 4, "y": 2, "battery": 99.2, "task": null}, {"id": "R3", "x": 6, "y": 0, "battery": 99.1, "task": null}, {"id": "R4", "x": 8, "y": 3, "battery": 99.0, "task": "T4"}, {"id": "R5", "x": 10, "y": 0, "battery": 99.1, "task": null}, {"id": "R6", "x": 12, "y": 0, "battery": 99.1, "task": null}, {"id": "R7", "x": 14, "y": 2, "battery": 99.2, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.2, "task": null}, {"id": "R9", "x": 2, "y": 0, "battery": 99.2, "task": null}]}, {"tick": 13, "collisions": 0, "agents": [{"id": "R1", "x": 0, "y": 0, "battery": 99.1, "task": null}, {"id": "R2", "x": 4, "y": 2, "battery": 99.2, "task": null}, {"id": "R3", "x": 6, "y": 0, "battery": 99.1, "task": null}, {"id": "R4", "x": 8, "y": 2, "battery": 99.0, "task": null}, {"id": "R5", "x": 10, "y": 0, "battery": 99.1, "task": null}, {"id": "R6", "x": 12, "y": 0, "battery": 99.1, "task": null}, {"id": "R7", "x": 14, "y": 2, "battery": 99.2, "task": null}, {"id": "R8", "x": 16, "y": 2, "battery": 99.2, "task": null}, {"id": "R9", "x": 2, "y": 0, "battery": 99.1, "task": null}]}], "events": [{"tick": 3, "type": "aisle_blocked", "cell": [8, 7]}, {"tick": 9, "type": "task_completed", "task": "T8", "agent": "R2"}, {"tick": 9, "type": "task_completed", "task": "T3", "agent": "R7"}, {"tick": 9, "type": "task_completed", "task": "T6", "agent": "R8"}, {"tick": 10, "type": "task_completed", "task": "T1", "agent": "R9"}, {"tick": 11, "type": "task_completed", "task": "T5", "agent": "R1"}, {"tick": 11, "type": "task_completed", "task": "T7", "agent": "R3"}, {"tick": 11, "type": "task_completed", "task": "T9", "agent": "R5"}, {"tick": 11, "type": "task_completed", "task": "T2", "agent": "R6"}, {"tick": 13, "type": "task_completed", "task": "T4", "agent": "R4"}], "meta": {"total_ticks": 13, "collisions": 0, "robot_count": 9, "task_count": 9}};
+"use strict";
+/*
+ * JS port of src/fleet/{grid,agent,planning/pibt,allocation/auction}.py
+ *
+ * This mirrors the tested Python implementation's LOGIC as closely as
+ * possible -- same PIBT algorithm structure (priority inheritance +
+ * backtracking, two-mode candidate ordering, BFS distance not Manhattan,
+ * blocked_ticks freezing at goal, tick-varying tie-break jitter), same
+ * auction bidding formula. It exists ONLY to drive the live in-browser
+ * demo -- the Python version remains the tested, authoritative
+ * implementation behind every benchmark number and PPT claim. Every
+ * behavior here was re-verified independently in Node (see
+ * verify_js_port.js) against the same scenarios the Python test suite
+ * covers, precisely because a second implementation that silently
+ * diverges from the tested one would be worse than no live demo at all.
+ */
+
+// ---------- grid ----------
+
+function generateLargeLayout(numShelfCols = 8, shelfRows = 9, crossAisleEvery = 4, stagingRows = 2) {
+  const width = numShelfCols * 2 + 1;
+  const rows = [];
+  for (let r = 0; r < shelfRows; r++) {
+    if (r % crossAisleEvery === crossAisleEvery - 1) {
+      rows.push("0".repeat(width));
+    } else {
+      let row = "";
+      for (let c = 0; c < width; c++) row += (c % 2 === 1) ? "1" : "0";
+      rows.push(row);
+    }
+  }
+  for (let i = 0; i < stagingRows; i++) rows.push("0".repeat(width));
+  return rows;
+}
+
+class Grid {
+  constructor(layout) {
+    this.layout = layout;
+    this.width = layout[0].length;
+    this.height = layout.length;
+    this.blockedCells = new Set();
+    this.version = 0;
+  }
+  key(x, y) { return x + "," + y; }
+  isFree(x, y) {
+    if (x < 0 || x >= this.width || y < 0 || y >= this.height) return false;
+    if (this.blockedCells.has(this.key(x, y))) return false;
+    return this.layout[y][x] !== "1";
+  }
+  neighbors(x, y) {
+    const out = [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (this.isFree(nx, ny)) out.push([nx, ny]);
+    }
+    return out;
+  }
+  blockCell(x, y) { this.blockedCells.add(this.key(x, y)); this.version++; }
+  unblockCell(x, y) { this.blockedCells.delete(this.key(x, y)); this.version++; }
+  bfsDistances(goalX, goalY) {
+    const dist = new Map();
+    const startKey = this.key(goalX, goalY);
+    dist.set(startKey, 0);
+    const q = [[goalX, goalY]];
+    let qi = 0;
+    while (qi < q.length) {
+      const [cx, cy] = q[qi++];
+      const d = dist.get(this.key(cx, cy));
+      for (const [nx, ny] of this.neighbors(cx, cy)) {
+        const k = this.key(nx, ny);
+        if (!dist.has(k)) { dist.set(k, d + 1); q.push([nx, ny]); }
+      }
+    }
+    return dist;
+  }
+}
+
+// ---------- agent ----------
+
+function makeAgent(id, x, y, goalX, goalY) {
+  return { id, x, y, goalX, goalY, battery: 100.0, taskId: null, blockedTicks: 0 };
+}
+
+// ---------- PIBT ----------
+
+// Deterministic tie-break -- mirrors pibt.py's _stable_jitter (crc32,
+// specifically NOT relying on any per-process-random hash). Simple
+// FNV-1a: deterministic across runs/browsers, which is what matters here
+// -- reproducibility of "the same seed gives the same run", not
+// cryptographic quality.
+function stableJitter(agentId, tick) {
+  const s = agentId + "-" + tick;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0) % 997;
+}
+
+class DistCache {
+  constructor() { this.cache = new Map(); }
+  get(grid, goalX, goalY) {
+    const key = goalX + "," + goalY + "@" + grid.version;
+    if (!this.cache.has(key)) this.cache.set(key, grid.bfsDistances(goalX, goalY));
+    return this.cache.get(key);
+  }
+  distTo(grid, x, y, goalX, goalY) {
+    const d = this.get(grid, goalX, goalY);
+    const v = d.get(x + "," + y);
+    return v === undefined ? 1e6 : v;
+  }
+}
+
+// planStep: mirrors planning/pibt.py's plan_step exactly, including both
+// bug-fix behaviors (fair own-turn ranking incl. "stay"; being-displaced
+// ranking forces "stay" last) and the swap guard.
+function planStep(grid, agents, tick, distCache) {
+  const occupancy = new Map();
+  for (const a of agents.values()) occupancy.set(a.x + "," + a.y, a.id);
+
+  const decided = new Map();
+  const reservedBy = new Map();
+  const inProgress = new Set();
+
+  const order = [...agents.keys()].sort((a, b) => {
+    const pa = agents.get(a), pb = agents.get(b);
+    if (pb.blockedTicks !== pa.blockedTicks) return pb.blockedTicks - pa.blockedTicks;
+    const ja = stableJitter(a, tick), jb = stableJitter(b, tick);
+    if (ja !== jb) return ja - jb;
+    return a < b ? -1 : 1;
+  });
+
+  function candidates(agent, beingDisplaced) {
+    const nbrs = grid.neighbors(agent.x, agent.y)
+      .sort((p, q) => {
+        const dp = distCache.distTo(grid, p[0], p[1], agent.goalX, agent.goalY);
+        const dq = distCache.distTo(grid, q[0], q[1], agent.goalX, agent.goalY);
+        if (dp !== dq) return dp - dq;
+        if (p[0] !== q[0]) return p[0] - q[0];
+        return p[1] - q[1];
+      });
+    if (beingDisplaced) return [...nbrs, [agent.x, agent.y]];
+    const all = [...nbrs, [agent.x, agent.y]];
+    all.sort((p, q) => {
+      const dp = distCache.distTo(grid, p[0], p[1], agent.goalX, agent.goalY);
+      const dq = distCache.distTo(grid, q[0], q[1], agent.goalX, agent.goalY);
+      if (dp !== dq) return dp - dq;
+      if (p[0] !== q[0]) return p[0] - q[0];
+      return p[1] - q[1];
+    });
+    return all;
+  }
+
+  function pibt(agentId, beingDisplaced) {
+    if (decided.has(agentId)) return true;
+    if (inProgress.has(agentId)) return false;
+    inProgress.add(agentId);
+    const agent = agents.get(agentId);
+
+    for (const [cx, cy] of candidates(agent, beingDisplaced)) {
+      const cellKey = cx + "," + cy;
+      if (reservedBy.has(cellKey) && reservedBy.get(cellKey) !== agentId) continue;
+
+      const occupantId = occupancy.get(cellKey);
+      if (occupantId !== undefined && occupantId !== agentId) {
+        if (!decided.has(occupantId)) {
+          if (!pibt(occupantId, true)) continue;
+        }
+        const occDecided = decided.get(occupantId);
+        if (occDecided && occDecided[0] === cx && occDecided[1] === cy) continue;
+        if (occDecided && occDecided[0] === agent.x && occDecided[1] === agent.y) continue;
+      }
+
+      decided.set(agentId, [cx, cy]);
+      reservedBy.set(cellKey, agentId);
+      inProgress.delete(agentId);
+      return true;
+    }
+    inProgress.delete(agentId);
+    return false;
+  }
+
+  for (const agentId of order) if (!decided.has(agentId)) pibt(agentId, false);
+
+  for (const agentId of agents.keys()) {
+    if (!decided.has(agentId)) {
+      const a = agents.get(agentId);
+      decided.set(agentId, [a.x, a.y]);
+    }
+  }
+  return decided;
+}
+
+// ---------- auction ----------
+
+function bid(grid, distCache, agent, task) {
+  const dist = distCache.distTo(grid, agent.x, agent.y, task.pickupX, task.pickupY);
+  const batteryPenalty = (100.0 - agent.battery) * 0.05;
+  return dist + batteryPenalty;
+}
+
+function runAuction(grid, agents, openTasks, distCache) {
+  const idle = [...agents.values()].filter(a => a.taskId === null);
+  const stillOpen = [];
+  for (const task of openTasks) {
+    if (idle.length === 0) { stillOpen.push(task); continue; }
+    let best = idle[0], bestBid = bid(grid, distCache, idle[0], task);
+    for (let i = 1; i < idle.length; i++) {
+      const b = bid(grid, distCache, idle[i], task);
+      if (b < bestBid) { best = idle[i]; bestBid = b; }
+    }
+    best.taskId = task.taskId;
+    best.goalX = task.pickupX; best.goalY = task.pickupY;
+    best.blockedTicks = 0;
+    idle.splice(idle.indexOf(best), 1);
+  }
+  return stillOpen;
+}
+
+function checkBlockedAgents(agents, threshold = 5) {
+  const released = [];
+  for (const a of agents.values()) {
+    if (a.taskId !== null && a.blockedTicks >= threshold) {
+      released.push({ taskId: a.taskId, pickupX: a.goalX, pickupY: a.goalY });
+      a.taskId = null; a.goalX = a.x; a.goalY = a.y; a.blockedTicks = 0;
+    }
+  }
+  return released;
+}
+
+// ---------- engine tick ----------
+
+function stepPibt(grid, agents, tick, distCache) {
+  const decided = planStep(grid, agents, tick, distCache);
+  const collisions = [];
+  const seen = new Map();
+  for (const [id, [x, y]] of decided) {
+    const k = x + "," + y;
+    if (seen.has(k)) collisions.push([seen.get(k), id]);
+    else seen.set(k, id);
+  }
+  for (const [id, [x, y]] of decided) {
+    const a = agents.get(id);
+    const moved = (x !== a.x || y !== a.y);
+    a.x = x; a.y = y;
+    a.battery = Math.max(0, a.battery - (moved ? 0.08 : 0.02));
+    const atGoal = (a.x === a.goalX && a.y === a.goalY);
+    if (atGoal) a.blockedTicks = 0;
+    else if (moved) a.blockedTicks = 0;
+    else a.blockedTicks += 1;
+  }
+  return collisions;
+}
+
+
+
 const ROBOT_COLORS = {"R1": "#4FD1E8", "R2": "#F2A83C", "R3": "#E8558F", "R4": "#6FD48A", "R5": "#9C7CF0", "R6": "#F0754A", "R7": "#5B8DEF", "R8": "#B8D93C", "R9": "#45C4A0", "R10": "#E0C34C"};
-
-const grid = DATA.grid;
-const frames = DATA.frames;
-const events = DATA.events;
-const pickupCells = DATA.pickup_cells;
-
-// ---- isometric projection ----
-// Design decision, deliberate: shelves are drawn as raised boxes for
-// real visual depth, but ALL robots are drawn in a separate pass AFTER
-// every floor/shelf tile, unconditionally on top. That guarantees a
-// robot is never visually hidden behind a shelf, no matter the relative
-// depth ordering -- clarity was the explicit requirement, so it's
-// enforced structurally, not hoped for.
 const TILE_W = 60, TILE_H = 30, SHELF_H = 20, ROBOT_LIFT = 15;
+const MAX_TICKS = 400;
 
 function isoPos(col, row) { return { x: (col - row) * (TILE_W / 2), y: (col + row) * (TILE_H / 2) }; }
 
-let ORIGIN_X = 0, ORIGIN_Y = 0;
 const canvas = document.getElementById('cv');
 const ctx = canvas.getContext('2d');
+let ORIGIN_X = 0, ORIGIN_Y = 0;
+
+let grid, agents, distCache, layout;
+let history = [];      // computed frames: {tick, collisions, agents:[{id,x,y,battery,task}]}
+let events = [];
+let pickupCells = [];
+let openTasksPending = [];
+let completedTasks = new Set();
+let totalCollisions = 0;
+let currentTick = 0;
+let playing = true;
+let msPerTick = 450;
+let lastStepTime = performance.now();
+let finished = false;
 
 function computeOrigin() {
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -159,92 +400,115 @@ function computeOrigin() {
   canvas.width = (maxX - minX) + TILE_W + pad * 2;
   canvas.height = (maxY - minY) + TILE_H + pad * 2 + SHELF_H + ROBOT_LIFT + 20;
 }
-
-function screenPos(col, row) {
-  const p = isoPos(col, row);
-  return { x: p.x + ORIGIN_X, y: p.y + ORIGIN_Y };
+function screenPos(col, row) { const p = isoPos(col, row); return { x: p.x + ORIGIN_X, y: p.y + ORIGIN_Y }; }
+function inverseScreenToGrid(sx, sy) {
+  const x = sx - ORIGIN_X, y = sy - ORIGIN_Y;
+  const col = Math.round(x / TILE_W + y / TILE_H);
+  const row = Math.round(y / TILE_H - x / TILE_W);
+  return [col, row];
 }
 
-function diamondPath(cx, cy, hw, hh) {
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - hh);
-  ctx.lineTo(cx + hw, cy);
-  ctx.lineTo(cx, cy + hh);
-  ctx.lineTo(cx - hw, cy);
-  ctx.closePath();
+function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+
+function newRun() {
+  const n = Math.max(6, Math.min(10, parseInt(document.getElementById('robotCount').value) || 9));
+  layout = generateLargeLayout();
+  grid = new Grid(layout);
+  distCache = new DistCache();
+
+  const stagingRow = grid.height - 1;
+  const aisleCols = [];
+  for (let c = 0; c < grid.width; c += 2) aisleCols.push(c);
+  const startCols = shuffle([...aisleCols]).slice(0, n);
+
+  const agentsArr = startCols.map((c, i) => makeAgent("R" + (i + 1), c, stagingRow, c, stagingRow));
+  agents = new Map(agentsArr.map(a => [a.id, a]));
+
+  const pickupRows = [0, 2];
+  const pickupPool = [];
+  for (const c of aisleCols) for (const r of pickupRows) pickupPool.push([c, r]);
+  shuffle(pickupPool);
+  pickupCells = pickupPool.slice(0, n);
+
+  let openTasks = pickupCells.map((c, i) => ({ taskId: "T" + (i + 1), pickupX: c[0], pickupY: c[1] }));
+  runAuction(grid, agents, openTasks, distCache);
+
+  history = [];
+  events = [];
+  completedTasks = new Set();
+  totalCollisions = 0;
+  currentTick = 0;
+  finished = false;
+  playing = true;
+
+  computeOrigin();
+  history.push(snapshot(0));
+  updatePlayIcon();
 }
 
+function snapshot(tick) {
+  return {
+    tick, collisions: totalCollisions,
+    agents: [...agents.values()].map(a => ({ id: a.id, x: a.x, y: a.y, battery: Math.round(a.battery * 10) / 10, task: a.taskId })),
+  };
+}
+
+function computeNextTick() {
+  if (finished) return;
+  const tick = history.length; // next tick index to compute
+  const collisions = stepPibt(grid, agents, tick, distCache);
+  totalCollisions += collisions.length;
+
+  const released = checkBlockedAgents(agents);
+  if (released.length) {
+    for (const t of released) events.push({ tick, type: 'task_released', task: t.taskId });
+    runAuction(grid, agents, released, distCache);
+    for (const a of agents.values()) if (released.some(t => t.taskId === a.taskId)) events.push({ tick, type: 'task_reassigned', task: a.taskId, agent: a.id });
+  }
+  for (const a of agents.values()) {
+    if (a.taskId !== null && a.x === a.goalX && a.y === a.goalY && !completedTasks.has(a.taskId)) {
+      completedTasks.add(a.taskId);
+      events.push({ tick, type: 'task_completed', task: a.taskId, agent: a.id });
+      a.taskId = null;
+    }
+  }
+  history.push(snapshot(tick));
+  if (completedTasks.size === pickupCells.length || tick >= MAX_TICKS) { finished = true; playing = false; }
+}
+
+function frameAt(i) { return history[Math.max(0, Math.min(history.length - 1, i))]; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function diamondPath(cx, cy, hw, hh) { ctx.beginPath(); ctx.moveTo(cx, cy - hh); ctx.lineTo(cx + hw, cy); ctx.lineTo(cx, cy + hh); ctx.lineTo(cx - hw, cy); ctx.closePath(); }
 function drawFloorTile(col, row, blocked) {
   const { x, y } = screenPos(col, row);
   diamondPath(x, y, TILE_W / 2, TILE_H / 2);
-  ctx.fillStyle = blocked ? 'rgba(192,57,43,0.4)' : '#11151a';
-  ctx.fill();
+  ctx.fillStyle = blocked ? 'rgba(192,57,43,0.4)' : '#11151a'; ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1; ctx.stroke();
 }
-
 function drawShelf(col, row) {
   const { x, y } = screenPos(col, row);
-  const hw = TILE_W / 2, hh = TILE_H / 2;
-  const topY = y - SHELF_H;
-
-  ctx.beginPath();
-  ctx.moveTo(x, topY + hh); ctx.lineTo(x + hw, topY); ctx.lineTo(x + hw, y); ctx.lineTo(x, y + hh);
+  const hw = TILE_W / 2, hh = TILE_H / 2, topY = y - SHELF_H;
+  ctx.beginPath(); ctx.moveTo(x, topY + hh); ctx.lineTo(x + hw, topY); ctx.lineTo(x + hw, y); ctx.lineTo(x, y + hh);
   ctx.closePath(); ctx.fillStyle = '#2A1E17'; ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(x, topY + hh); ctx.lineTo(x - hw, topY); ctx.lineTo(x - hw, y); ctx.lineTo(x, y + hh);
+  ctx.beginPath(); ctx.moveTo(x, topY + hh); ctx.lineTo(x - hw, topY); ctx.lineTo(x - hw, y); ctx.lineTo(x, y + hh);
   ctx.closePath(); ctx.fillStyle = '#332419'; ctx.fill();
-
   diamondPath(x, topY, hw, hh);
   const grad = ctx.createLinearGradient(x, topY - hh, x, topY + hh);
   grad.addColorStop(0, '#9C7C5A'); grad.addColorStop(1, '#7A5D42');
   ctx.fillStyle = grad; ctx.fill();
   ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
 }
+function drawHazard(col, row) { const { x, y } = screenPos(col, row); diamondPath(x, y, TILE_W / 2 - 3, TILE_H / 2 - 2); ctx.strokeStyle = '#C0392B'; ctx.lineWidth = 2.5; ctx.stroke(); }
 
-function drawHazard(col, row) {
-  const { x, y } = screenPos(col, row);
-  diamondPath(x, y, TILE_W / 2 - 3, TILE_H / 2 - 2);
-  ctx.strokeStyle = '#C0392B'; ctx.lineWidth = 2.5; ctx.stroke();
-}
-
-function isBlockedAt(tick, x, y) {
-  for (const e of events) if (e.type === 'aisle_blocked' && e.tick <= tick && e.cell[0] === x && e.cell[1] === y) return true;
-  return false;
-}
-
-function activeTasksAt(tick) {
-  const done = new Set();
-  for (const e of events) if (e.type === 'task_completed' && e.tick <= tick) done.add(e.task);
-  return done;
-}
+function activeTasksAt(tick) { const done = new Set(); for (const e of events) if (e.type === 'task_completed' && e.tick <= tick) done.add(e.task); return done; }
 
 function drawScene(tick) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let r = 0; r < grid.height; r++) for (let c = 0; c < grid.width; c++) if (layout[r][c] !== '1') drawFloorTile(c, r, grid.blockedCells.has(c + "," + r));
+  for (let r = 0; r < grid.height; r++) for (let c = 0; c < grid.width; c++) if (layout[r][c] === '1') drawShelf(c, r);
+  for (const k of grid.blockedCells) { const [bx, by] = k.split(",").map(Number); if (layout[by][bx] !== '1') drawHazard(bx, by); }
 
-  // pass 1: floor + shelves, back-to-front (row then col ascending is
-  // correct depth order for this projection)
-  for (let r = 0; r < grid.height; r++) {
-    for (let c = 0; c < grid.width; c++) {
-      const isShelf = grid.layout[r][c] === '1';
-      if (!isShelf) drawFloorTile(c, r, isBlockedAt(tick, c, r));
-    }
-  }
-  for (let r = 0; r < grid.height; r++) {
-    for (let c = 0; c < grid.width; c++) {
-      if (grid.layout[r][c] === '1') drawShelf(c, r);
-    }
-  }
-  // dynamically-blocked cell that ISN'T a static shelf (an aisle cell
-  // that became blocked mid-run) gets a flat hazard ring, drawn after
-  // shelves so it's never hidden
-  for (const e of events) {
-    if (e.type === 'aisle_blocked' && e.tick <= tick && grid.layout[e.cell[1]][e.cell[0]] !== '1') {
-      drawHazard(e.cell[0], e.cell[1]);
-    }
-  }
-
-  // pass 2: task beacons (floor-level, never raised -- stay safely clear of shelf boxes)
   const done = activeTasksAt(tick);
   pickupCells.forEach((cell, i) => {
     const taskId = 'T' + (i + 1);
@@ -255,17 +519,9 @@ function drawScene(tick) {
     ctx.strokeStyle = 'rgba(255,178,56,' + (0.35 + pulse * 0.35) + ')'; ctx.lineWidth = 2; ctx.stroke();
     ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fillStyle = '#FFB238'; ctx.fill();
   });
-
-  return done;
 }
 
-function lerp(a, b, t) { return a + (b - a) * t; }
-function frameAt(i) { return frames[Math.max(0, Math.min(frames.length - 1, i))]; }
-
 function drawRobots(idx, frac) {
-  // pass 3: ALL robots, unconditionally after every floor/shelf/task
-  // element -- see the comment above TILE_W. Sorted by depth purely so
-  // two overlapping robots layer correctly relative to EACH OTHER.
   const f0 = frameAt(idx), f1 = frameAt(idx + 1);
   const withDepth = f0.agents.map(a0 => {
     const a1 = f1.agents.find(a => a.id === a0.id) || a0;
@@ -273,60 +529,39 @@ function drawRobots(idx, frac) {
     return { a0, a1, gx, gy, depth: gx + gy };
   });
   withDepth.sort((p, q) => p.depth - q.depth);
-
   withDepth.forEach(({ a0, a1, gx, gy }) => {
     const { x, y } = screenPos(gx, gy);
     const color = ROBOT_COLORS[a0.id] || '#ccc';
     const bodyY = y - ROBOT_LIFT;
-
-    // ground shadow
-    ctx.beginPath();
-    ctx.ellipse(x, y, TILE_W / 2 - 14, TILE_H / 2 - 6, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
-
-    // motion trail (in grid space, projected -- linear transform, so
-    // lerping grid coords then projecting is equivalent to the reverse)
+    ctx.beginPath(); ctx.ellipse(x, y, TILE_W / 2 - 14, TILE_H / 2 - 6, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
     if (a0.x !== a1.x || a0.y !== a1.y) {
       const prev = screenPos(a0.x, a0.y);
       ctx.beginPath(); ctx.moveTo(prev.x, prev.y - ROBOT_LIFT); ctx.lineTo(x, bodyY);
       ctx.strokeStyle = color + '50'; ctx.lineWidth = 3; ctx.stroke();
     }
-
-    ctx.beginPath(); ctx.arc(x, bodyY, 15, 0, Math.PI * 2);
-    ctx.fillStyle = color; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, bodyY, 15, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
     ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.stroke();
-
-    ctx.font = '600 10px IBM Plex Mono, monospace';
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(a0.id, x, bodyY + 1);
-
+    ctx.font = '600 10px IBM Plex Mono, monospace'; ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(a0.id, x, bodyY + 1);
     const battColor = a0.battery > 60 ? '#6FD48A' : a0.battery > 25 ? '#F2A83C' : '#E8558F';
-    ctx.beginPath(); ctx.arc(x, bodyY - 15, 3.5, 0, Math.PI * 2);
-    ctx.fillStyle = battColor; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, bodyY - 15, 3.5, 0, Math.PI * 2); ctx.fillStyle = battColor; ctx.fill();
   });
 }
 
 function render() {
-  const idx = Math.floor(currentTick);
-  const frac = currentTick - idx;
+  const idx = Math.floor(currentTick), frac = currentTick - idx;
   const f = frameAt(idx);
   drawScene(idx);
   drawRobots(idx, frac);
-
   document.getElementById('tickVal').textContent = idx;
   document.getElementById('collVal').textContent = f.collisions;
   document.getElementById('taskVal').textContent = activeTasksAt(idx).size + '/' + pickupCells.length;
   updateScrub(idx);
 }
 
-let currentTick = 0;
-let playing = true;
-let msPerTick = 450;
-let lastStepTime = performance.now();
-
 function renderFleetList(idx) {
   const f = frameAt(idx);
+  document.getElementById('fleetHead').textContent = 'FLEET · ' + f.agents.length + ' robots';
   const list = document.getElementById('fleetList');
   list.innerHTML = '';
   f.agents.forEach(a => {
@@ -334,18 +569,12 @@ function renderFleetList(idx) {
     const battColor = a.battery > 60 ? '#6FD48A' : a.battery > 25 ? '#F2A83C' : '#E8558F';
     const row = document.createElement('div');
     row.className = 'robot-row';
-    row.innerHTML = `
-      <div class="swatch" style="background:${color}"></div>
-      <div class="robot-info">
-        <div class="robot-id mono">${a.id}</div>
-        <div class="robot-task">${a.task ? 'task ' + a.task : 'idle'}</div>
-      </div>
-      <div class="batt-bar-track"><div class="batt-bar-fill" style="width:${a.battery}%;background:${battColor}"></div></div>
-    `;
+    row.innerHTML = `<div class="swatch" style="background:${color}"></div>
+      <div class="robot-info"><div class="robot-id mono">${a.id}</div><div class="robot-task">${a.task ? 'task ' + a.task : 'idle'}</div></div>
+      <div class="batt-bar-track"><div class="batt-bar-fill" style="width:${a.battery}%;background:${battColor}"></div></div>`;
     list.appendChild(row);
   });
 }
-
 function renderEventLog(idx) {
   const log = document.getElementById('eventLog');
   const shown = events.filter(e => e.tick <= idx).slice(-6).reverse();
@@ -358,34 +587,36 @@ function renderEventLog(idx) {
     return `<div class="ev"><span class="t mono">t${e.tick}</span> &nbsp;${text}</div>`;
   }).join('');
 }
-
 function updateScrub(idx) {
-  const pct = idx / (frames.length - 1);
+  const denom = Math.max(1, history.length - 1);
+  const pct = idx / denom;
   document.getElementById('scrubFill').style.width = (pct * 100) + '%';
   document.getElementById('scrubHandle').style.left = (pct * 100) + '%';
-  document.getElementById('timeLabel').textContent = idx + ' / ' + (frames.length - 1);
+  document.getElementById('timeLabel').textContent = idx + ' / ' + (history.length - 1) + (finished ? '' : '+');
 }
 
-function setupScrubEvents() {
+document.getElementById('scrubTrack').addEventListener('mousedown', e => {
   const track = document.getElementById('scrubTrack');
-  events.forEach(e => {
-    if (e.tick === 0) return;
-    const pct = e.tick / (frames.length - 1);
-    const dot = document.createElement('div');
-    dot.className = 'scrub-event'; dot.style.left = (pct * 100) + '%';
-    track.appendChild(dot);
-  });
-  let dragging = false;
   const seek = (clientX) => {
     const rect = track.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    currentTick = pct * (frames.length - 1);
-    renderFleetList(Math.floor(currentTick)); renderEventLog(Math.floor(currentTick)); render();
+    currentTick = pct * Math.max(1, history.length - 1);
   };
-  track.addEventListener('mousedown', e => { dragging = true; seek(e.clientX); playing = false; updatePlayIcon(); });
-  window.addEventListener('mousemove', e => { if (dragging) seek(e.clientX); });
-  window.addEventListener('mouseup', () => dragging = false);
-}
+  playing = false; updatePlayIcon(); seek(e.clientX);
+  const move = (ev) => seek(ev.clientX);
+  const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+  window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+});
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const [col, row] = inverseScreenToGrid(e.clientX - rect.left, e.clientY - rect.top);
+  if (col < 0 || col >= grid.width || row < 0 || row >= grid.height) return;
+  if (layout[row][col] === '1') return; // can't block a static shelf cell, nothing to toggle
+  const key = col + "," + row;
+  if (grid.blockedCells.has(key)) { grid.unblockCell(col, row); }
+  else { grid.blockCell(col, row); events.push({ tick: history.length - 1, type: 'aisle_blocked', cell: [col, row] }); }
+});
 
 function updatePlayIcon() {
   const icon = playing ? '&#10074;&#10074;' : '&#9654;';
@@ -393,22 +624,22 @@ function updatePlayIcon() {
   document.getElementById('playBtn2').innerHTML = icon;
 }
 function togglePlay() {
-  playing = !playing;
-  if (playing && currentTick >= frames.length - 1) currentTick = 0;
-  updatePlayIcon();
+  if (finished && currentTick >= history.length - 1) { newRun(); return; }
+  playing = !playing; updatePlayIcon();
 }
 document.getElementById('playBtn').addEventListener('click', togglePlay);
 document.getElementById('playBtn2').addEventListener('click', togglePlay);
+document.getElementById('genBtn').addEventListener('click', newRun);
 document.getElementById('speedSel').addEventListener('change', (e) => { msPerTick = parseInt(e.target.value); });
 
-computeOrigin();
-setupScrubEvents();
+newRun();
 
 function loop(now) {
   const elapsed = now - lastStepTime;
   if (playing) {
     currentTick += elapsed / msPerTick;
-    if (currentTick >= frames.length - 1) { currentTick = frames.length - 1; playing = false; updatePlayIcon(); }
+    while (Math.floor(currentTick) >= history.length - 1 && !finished) computeNextTick();
+    if (finished && currentTick >= history.length - 1) { currentTick = history.length - 1; playing = false; updatePlayIcon(); }
   }
   lastStepTime = now;
   render();
