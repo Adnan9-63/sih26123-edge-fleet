@@ -266,3 +266,18 @@ Upgraded `visuals/warehouse_demo.html` from flat top-down to an isometric ("2.5D
 **Deliberate design decision, worth keeping:** a full 3D camera view was considered and rejected -- real warehouse fleet-ops software is top-down/isometric specifically because a 3D camera can let one object visually hide another, which is the opposite of what a coordination demo should ever do. To make sure this version never has that problem even with isometric depth: floor and shelf geometry render first (back-to-front), then EVERY robot renders in an unconditional second pass on top, sorted only by relative position to each other. A robot can never be hidden behind a shelf, structurally, not by luck. Verified visually via headless-browser screenshots at several points in playback, including the exact tick where the most shelf rows are between the camera and the robots.
 
 Same underlying `visuals/demo_run.json` -- no simulation change, purely a rendering upgrade.
+
+---
+
+## Making the visual demo genuinely live (not a replay)
+
+The previous version replayed one fixed, pre-recorded Python run -- functionally like a video, which defeats the point of a live demo (can't respond to "what if you add more robots" on the spot). Fixed by porting the core algorithm to JavaScript so it runs live, in the browser, computing fresh every tick:
+
+- `visuals/fleet_sim.js` -- JS port of `grid.py` + `planning/pibt.py` + `allocation/auction.py`. Mirrors the Python logic deliberately closely: same two-mode PIBT candidate ordering (own-turn vs. being-displaced), same BFS-not-Manhattan distance, same blocked_ticks-freezes-at-goal fix, same tick-varying deterministic tie-break (FNV-1a hash here instead of crc32, same purpose: stable across runs, not Math.random-seeded).
+- `visuals/verify_js_port.js` -- a standalone Node test file, run independently of any browser, checking this port against the same scenarios the Python `tests/test_pibt.py` and `tests/test_auction.py` cover: forced head-on corridor, 3-agent multi-choke, the documented direct-swap safety-not-liveness case, a 9-robot auction+blocked-aisle scenario, and a determinism check. All pass (`node visuals/verify_js_port.js`).
+
+**Being straight about what this means:** there are now two implementations of the same algorithm. That's a real risk (two things can silently drift apart) that wasn't worth introducing without independent verification -- which is why `verify_js_port.js` exists as its own thing, not just "it looked right in the browser." The Python version remains the sole tested, authoritative source behind every benchmark number and PPT claim; the JS version exists only to drive the interactive demo.
+
+**New capabilities the live version has that the replay never could:**
+- "New Run" button -- randomizes robot count (6-10, selectable), start positions, and task pickups, then genuinely computes the result live, not from a lookup table.
+- Click any open aisle tile while it's running to block it live -- checked with Playwright: the fleet keeps working, re-routes, and finishes with zero collisions even with a real bottleneck injected into a busy cross-aisle mid-run (verified taking longer but still converging, not deadlocking).

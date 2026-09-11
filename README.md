@@ -36,16 +36,20 @@ engine = SimulationEngine(grid, agents, mode="pibt")
 render_pygame.run(grid, engine)
 ```
 
-## Visual demo (shareable, no install needed)
+## Visual demo (live, shareable, no install needed)
 
-`visuals/warehouse_demo.html` is a self-contained browser replay of a real 9-robot,
-9-task run (bigger warehouse layout, `WarehouseGrid.large()`) — just open the file
-in any browser, nothing to install. Includes a scrubbable timeline, live fleet
-battery/task sidebar, and a dynamically blocked aisle mid-run. Regenerate after any
-engine change with:
+`visuals/warehouse_demo.html` runs the real fleet algorithm **live, in the browser** —
+not a replay of a fixed recording. Click **New Run** for a fresh randomized scenario
+(6-10 robots), or click any open aisle tile while it's running to block it and watch
+the fleet re-route on the spot. Just open the file in any browser, nothing to install.
+
+This is a JS port of the core simulation (`visuals/fleet_sim.js`), verified
+independently against the same scenarios the Python test suite covers:
 ```bash
-python scripts/export_demo_run.py      # re-runs the real simulation, writes visuals/demo_run.json
+node visuals/verify_js_port.js      # standalone check, no browser needed
 ```
+The Python implementation remains the sole tested source behind every benchmark
+number and PPT claim — the JS port exists only to drive this interactive demo.
 
 ## Status
 
