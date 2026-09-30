@@ -1,7 +1,15 @@
 # SIH26123 — Edge-AI Distributed Fleet Coordination for Warehouse AMRs
 
-**Problem statement:** [SIH26123](https://sih.gov.in) — Bharat Electronics
-Limited — Smart Automation
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-23%2F23%20passing-brightgreen)
+![Collisions](https://img.shields.io/badge/collisions-0-blue)
+![Theme](https://img.shields.io/badge/theme-Smart%20Automation-orange)
+
+<p align="center">
+  <img src="docs/assets/dashboard_preview.png" alt="SIH26123 Fleet Monitor Dashboard" width="800"/>
+</p>
+
+**Problem statement:** [SIH26123](https://sih.gov.in) — Bharat Electronics Limited — Smart Automation
 
 A fully decentralized coordination and collision-avoidance framework for a
 multi-robot warehouse fleet: no cloud, no central dispatcher, no single
