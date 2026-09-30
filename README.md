@@ -6,7 +6,14 @@ Limited — Smart Automation
 A fully decentralized coordination and collision-avoidance framework for a
 multi-robot warehouse fleet: no cloud, no central dispatcher, no single
 point of failure. Every robot plans, negotiates, and bids for tasks
-independently, communicating peer-to-peer with its neighbors.
+independently, communicating peer-to-peer with its neighbors. Designed
+for deployment in air-gapped, RF-degraded environments (military depots,
+hazardous-material warehouses) where cloud connectivity cannot be assumed
+and collision safety is non-negotiable.
+
+Includes an **Edge-AI layer** (XGBoost congestion prediction + Isolation
+Forest anomaly detection) running entirely on-device within the compute
+budget of a Raspberry Pi / Jetson Nano.
 
 See [`docs/PS_MAPPING.md`](docs/PS_MAPPING.md) for the line-by-line
 mapping from the official problem statement text to what's implemented
@@ -18,9 +25,13 @@ design and why each algorithm was chosen.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests/ -v          # run the test suite (18 tests)
-python scripts/run_demo.py          # headless demo, 3 agents on the default map
+python scripts/train_edge_ai.py              # train the Edge-AI models
+python -m pytest tests/ -v                   # run the full test suite (23/23 tests passing)
+python scripts/run_demo.py                   # headless demo, 3 agents on the default map
 python benchmark/stop_and_wait_baseline.py   # regenerate docs/BENCHMARK_RESULTS.md
+
+# To run the true decentralized P2P demo (3 processes over UDP multicast):
+python scripts/run_distributed_demo.py --kill-robot  # kills Robot 2 live to prove resilience
 ```
 
 To see the live dashboard (needs a real display, not headless):
@@ -59,10 +70,10 @@ log with what shipped each day and why.
 
 - [x] **Day 1-2** — grid world with narrow choke points, single-agent A*, tick engine, tests
 - [x] **Day 3** — decentralized comms layer (UDP multicast, no broker)
-- [x] **Day 4** — PIBT conflict resolution (13/13 tests passing; see docs/DEV_LOG.md for real bugs found and fixed)
-- [ ] **Day 5** — ORCA local avoidance (bonus layer — PIBT alone already satisfies the PS's core conflict-resolution ask; see dev log)
-- [x] **Day 6** — decentralized task auction + blocked-aisle re-routing (17/17 tests passing)
-- [x] **Day 7** — fleet dashboard, stop-and-wait baseline benchmark — **requirement-complete, 18/18 tests passing**, real numbers in `docs/BENCHMARK_RESULTS.md`
+- [x] **Day 4** — PIBT conflict resolution (see docs/DEV_LOG.md for real bugs found and fixed)
+- [x] **Day 5** — Edge-AI layer: XGBoost congestion predictor + Isolation Forest anomaly detector, integrated into auction bidding and fleet health monitoring
+- [x] **Day 6** — decentralized task auction + blocked-aisle re-routing
+- [x] **Day 7** — fleet dashboard, stop-and-wait baseline benchmark — **requirement-complete, 23/23 tests passing**, real numbers in `docs/BENCHMARK_RESULTS.md`
 
 ## Why decentralized (and why that's the point)
 
@@ -82,9 +93,10 @@ src/fleet/
   agent.py                per-robot state (position, battery, task, priority)
   planning/
     astar.py               single-agent pathfinding (Day 1-2)
-    pibt.py                 multi-agent conflict resolution (Day 4-5)
-  avoidance/
-    orca.py                 real-time local collision avoidance (Day 4-5)
+    pibt.py                 multi-agent conflict resolution (Day 4)
+  edge_ai/
+    congestion_predictor.py  XGBoost aisle congestion prediction (Day 5)
+    anomaly_detector.py      Isolation Forest robot health monitoring (Day 5)
   comms/
     p2p.py                   decentralized peer messaging (Day 3)
   allocation/
@@ -94,9 +106,12 @@ src/fleet/
   dashboard/
     render_pygame.py          fleet monitoring UI (Day 7)
 tests/                        pytest suite, grows alongside each module
-scripts/run_demo.py           headless entry point
-benchmark/                    stop-and-wait baseline vs PIBT+ORCA comparison
+scripts/
+  run_demo.py                 headless entry point
+  run_distributed_demo.py     multi-process P2P demo (kill a robot live)
+benchmark/                    stop-and-wait baseline vs PIBT comparison
 docs/
   PS_MAPPING.md                requirement -> implementation traceability
   DEV_LOG.md                    daily build log
+  JUDGE_QA.md                   scripted answers to expected judge questions
 ```

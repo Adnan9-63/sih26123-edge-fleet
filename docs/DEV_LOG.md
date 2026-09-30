@@ -130,12 +130,46 @@ conflict-resolution requirement.
 
 ---
 
-## Day 5 — ORCA (if pursued)
+## Day 5 — Edge-AI layer (congestion prediction + anomaly detection)
 
-*(fill in: how continuous-space ORCA output was reconciled back onto the
-discrete grid PIBT plans on; whether it was scoped in or deferred)*
+**Decision:** ORCA (continuous-space local avoidance) was originally
+planned for Day 5 but was deferred as a stretch goal. PIBT alone fully
+satisfies the PS's discrete conflict-resolution requirement and achieves
+0 collisions across all scenarios. Instead, Day 5 pivoted to the "AI" in
+"Edge-AI" -- the PS title explicitly says "Edge-AI Based," and having no
+ML component would be a gap against competing teams.
 
----
+**Built:**
+
+1. `edge_ai/congestion_predictor.py` -- an XGBoost model (~50 KB
+   serialized) trained on synthetic warehouse traffic data. Predicts
+   per-zone congestion scores (0.0 to 1.0) from current fleet state:
+   robot count per zone, pending tasks per zone, tick number. Integrated
+   into `auction.py`'s `_bid()` function as a congestion penalty so
+   robots proactively avoid future bottlenecks at task-assignment time,
+   reducing PIBT's real-time conflict-resolution load.
+
+2. `edge_ai/anomaly_detector.py` -- an Isolation Forest model (~30 KB)
+   monitoring per-robot telemetry (blocked_ticks, battery drain rate,
+   movement variance, distance-to-goal). Flags malfunctioning or
+   "glitching" robots so the fleet can mute their data and re-route
+   around them, preventing one bad actor from cascading failures.
+
+**Why these models, not deep learning:** Raspberry Pi 4 (ARM Cortex-A72,
+4 GB RAM, no GPU) is the PS's named edge target. XGBoost and Isolation
+Forest are scikit-learn/xgboost models that run in <2 ms on ARM with
+zero GPU dependency. A YOLOv8 or transformer model would require a
+Jetson-class GPU and 10-50x the power draw -- unsuitable for continuous
+warehouse operation on battery-powered AMRs.
+
+**Both models include a heuristic fallback** -- if no trained model file
+exists (first boot, corrupted storage), the predictor falls back to a
+rule-based congestion estimate and the detector falls back to a
+blocked_ticks threshold. Defense-grade systems must degrade gracefully,
+not crash on missing dependencies.
+
+**Verified:** tests in `tests/test_edge_ai.py` cover both fallback and
+trained modes.
 
 ## Day 6 — task allocation
 

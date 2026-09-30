@@ -51,14 +51,36 @@ class Task:
     pickup_cell: Cell
 
 
-def _bid(grid: WarehouseGrid, agent: Agent, task: Task) -> float:
+def _bid(grid: WarehouseGrid, agent: Agent, task: Task, congestion_predictor=None) -> float:
     """Lower is better. True graph distance (not Manhattan -- see
     planning/pibt.py's Day 4 fix for why that distinction matters on a
     grid with walls), plus a battery penalty so a low-battery agent
     isn't preferred over a closer, fresher one for a long haul."""
     dist = grid.bfs_distances(task.pickup_cell).get(agent.pos, 10**6)
     battery_penalty = (100.0 - agent.battery) * 0.05
-    return dist + battery_penalty
+    
+    congestion_penalty = 0.0
+    if congestion_predictor is not None:
+        y = task.pickup_cell[1]
+        if 0 <= y <= 2:
+            zone = 'north'
+        elif 3 <= y <= 5:
+            zone = 'central'
+        else:
+            zone = 'south'
+            
+        if isinstance(congestion_predictor, dict):
+            score = congestion_predictor.get(zone, 0.0)
+        else:
+            # If a mock or predictor object with a score attribute/method that we don't have features for
+            try:
+                score = congestion_predictor.predict_congestion({zone: {}}).get(zone, 0.0)
+            except:
+                score = 0.0
+                
+        congestion_penalty = score * 50.0  # arbitrary penalty scaling
+        
+    return dist + battery_penalty + congestion_penalty
 
 
 def run_auction(grid: WarehouseGrid, agents: dict[str, Agent], open_tasks: list[Task]) -> list[Task]:

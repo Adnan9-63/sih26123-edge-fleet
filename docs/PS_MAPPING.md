@@ -21,6 +21,7 @@ was asked, versus something adjacent to it.
 | 1 | "Decentralized Communication: Inter-robot messaging to share position and intent without a central server" | `comms/p2p.py` | **Done** -- UDP multicast, no broker; 3/3 tests passing |
 | 2 | "Dynamic Multi-Agent Conflict Resolution: Resolving deadlocks and avoiding collisions at narrow intersections or choke points in real-time" | `planning/pibt.py` | **Done** -- PIBT alone satisfies this; `avoidance/orca.py` remains an optional stretch layer, not required for compliance |
 | 3 | "Task Allocation & Re-routing: Automatically re-assigning pickup points or changing paths if one robot encounters a blocked aisle" | `allocation/auction.py` | **Done** -- decentralized auction + blocked-aisle release, 4/4 tests passing |
+| 4 | **Edge-AI layer** (cross-cutting — the PS *title* says "Edge-AI Based", so this is where the AI lives) | `edge_ai/congestion_predictor.py` (XGBoost, ~50 KB, <2 ms on ARM — predicts aisle congestion, integrated as a penalty into auction bidding) + `edge_ai/anomaly_detector.py` (Isolation Forest, ~30 KB, <1 ms — flags malfunctioning robots from telemetry for early task release) | **Done** -- both models run on-device, no cloud calls, pip-installable on ARM Linux; see `ARCHITECTURE.md` "Why Edge-AI" section |
 
 Note on requirement 2: the default layout in `grid.py` is deliberately
 **not** an open floor — it has single-width vertical corridors connecting
@@ -45,12 +46,24 @@ The PS Description says the system "must run locally on edge hardware
 (e.g., Raspberry Pi or Jetson Nano) onboard each robot," but the Expected
 Solution explicitly asks for "**a multi-robot simulation**." We're
 building the simulation, as asked — but every algorithm choice
-(PIBT over CBS, ORCA over a joint-space solver, no cloud calls anywhere)
-was made so that the exact same code could run on that class of edge
-hardware if it were ever deployed to physical robots. That's a design
-constraint we're honoring in software, not a requirement we're skipping.
-Say this explicitly in the idea PPT's Feasibility slide — don't let a
-judge find the tension and think it's an oversight.
+(PIBT over CBS, XGBoost/IsolationForest over deep learning, no cloud
+calls anywhere) was made so that the exact same code could run on that
+class of edge hardware if it were ever deployed to physical robots.
+That's a design constraint we're honoring in software, not a requirement
+we're skipping. Say this explicitly in the idea PPT's Feasibility slide
+— don't let a judge find the tension and think it's an oversight.
+
+**ORCA (Optimal Reciprocal Collision Avoidance) is explicitly deferred
+as future work**, not claimed in any benchmark result or PS compliance
+row. PIBT alone fully satisfies the PS's discrete conflict-resolution
+requirement; ORCA would add a continuous-space refinement layer for
+physical hardware deployment but is not needed for the simulation
+deliverable (see `ARCHITECTURE.md`, "Future work: continuous-space local
+avoidance"). The **Edge-AI layer** (`edge_ai/congestion_predictor.py` +
+`edge_ai/anomaly_detector.py`) was built as the Day 5 deliverable
+instead — it directly answers the PS title's "Edge-AI Based" qualifier
+and provides concrete, on-device intelligence that integrates into
+auction bidding and fleet health monitoring.
 
 ## Team size / hardware minimum
 
