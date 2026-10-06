@@ -49,15 +49,16 @@ RE_AUCTION_THRESHOLD = 5  # ticks of no progress before a task is released
 class Task:
     task_id: str
     pickup_cell: Cell
+    priority: int = 0  # 0 is normal, higher is more urgent (SLA)
 
 
 def _bid(grid: WarehouseGrid, agent: Agent, task: Task, congestion_predictor=None) -> float:
-    """Lower is better. True graph distance (not Manhattan -- see
-    planning/pibt.py's Day 4 fix for why that distinction matters on a
-    grid with walls), plus a battery penalty so a low-battery agent
-    isn't preferred over a closer, fresher one for a long haul."""
+    """Lower is better. True graph distance plus battery penalty.
+    High priority tasks subtract from the bid, making them more attractive.
+    """
     dist = grid.bfs_distances(task.pickup_cell).get(agent.pos, 10**6)
     battery_penalty = (100.0 - agent.battery) * 0.05
+    priority_bonus = task.priority * 10.0  # High priority tasks get a massive bid reduction
     
     congestion_penalty = 0.0
     if congestion_predictor is not None:
@@ -80,7 +81,7 @@ def _bid(grid: WarehouseGrid, agent: Agent, task: Task, congestion_predictor=Non
                 
         congestion_penalty = score * 50.0  # arbitrary penalty scaling
         
-    return dist + battery_penalty + congestion_penalty
+    return dist + battery_penalty + congestion_penalty - priority_bonus
 
 
 def run_auction(grid: WarehouseGrid, agents: dict[str, Agent], open_tasks: list[Task]) -> list[Task]:
@@ -113,7 +114,8 @@ def check_blocked_agents(agents: dict[str, Agent], open_tasks: list[Task]) -> li
     newly_open: list[Task] = []
     for agent in agents.values():
         if agent.task_id is not None and agent.blocked_ticks >= RE_AUCTION_THRESHOLD:
-            newly_open.append(Task(task_id=agent.task_id, pickup_cell=agent.goal))
+            # Escalate priority of blocked tasks so they are picked up faster by others
+            newly_open.append(Task(task_id=agent.task_id, pickup_cell=agent.goal, priority=1))
             agent.task_id = None
             agent.goal = agent.pos  # idle in place until the next auction
             agent.blocked_ticks = 0
