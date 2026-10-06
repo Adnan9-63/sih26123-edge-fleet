@@ -109,9 +109,17 @@ class Peer:
             with self._lock:
                 self._neighbors[msg["agent_id"]] = msg
 
-    def broadcast(self, state: PeerState) -> None:
+    def broadcast(self, state: PeerState, drop_rate: float = 0.0) -> None:
+        """Broadcasts state to neighbors. 
+        `drop_rate` simulates RF-degraded defense environments where packets randomly fail.
+        """
         if not self._send_sock:
             raise RuntimeError("Peer.start() must be called before broadcast()")
+            
+        import random
+        if drop_rate > 0.0 and random.random() < drop_rate:
+            return  # Simulate packet drop (chaos engineering)
+            
         state.ts = time.time()
         payload = json.dumps(asdict(state)).encode("utf-8")
         self._send_sock.sendto(payload, (self.group, self.port))

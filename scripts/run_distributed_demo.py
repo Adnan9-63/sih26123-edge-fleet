@@ -24,7 +24,7 @@ from fleet.comms.p2p import Peer, PeerState
 from fleet.planning.astar import astar
 from fleet.grid import WarehouseGrid
 
-def robot_worker(agent_id: str, start_pos: tuple, goal_pos: tuple, kill_after: float = None):
+def robot_worker(agent_id: str, start_pos: tuple, goal_pos: tuple, kill_after: float = None, drop_rate: float = 0.0):
     grid = WarehouseGrid.default()
     peer = Peer(agent_id)
     peer.start()
@@ -58,7 +58,7 @@ def robot_worker(agent_id: str, start_pos: tuple, goal_pos: tuple, kill_after: f
                 battery=battery
             )
             try:
-                peer.broadcast(state)
+                peer.broadcast(state, drop_rate=drop_rate)
             except RuntimeError:
                 pass # Comms might be killed
         
@@ -116,6 +116,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--kill-robot", action="store_true", help="Kill one robot's comms mid-run")
     parser.add_argument("--duration", type=float, default=15.0, help="Demo duration in seconds")
+    parser.add_argument("--drop-rate", type=float, default=0.0, help="Simulate RF degradation (e.g., 0.2 for 20% packet drop)")
     args = parser.parse_args()
 
     # Define 3 robots
@@ -131,7 +132,7 @@ if __name__ == "__main__":
         kill_time = 5.0 if (args.kill_robot and i == 1) else None
         p = multiprocessing.Process(
             target=robot_worker, 
-            args=(r["id"], r["start"], r["goal"], kill_time)
+            args=(r["id"], r["start"], r["goal"], kill_time, args.drop_rate)
         )
         processes.append(p)
         p.start()
