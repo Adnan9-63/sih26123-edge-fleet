@@ -1,0 +1,25 @@
+# Edge deployment Dockerfile for Raspberry Pi 4 / Jetson Nano
+# SIH26123 - Defense hardware compatible (ARM64)
+FROM python:3.11-slim-bullseye
+
+# No GUI dependencies required for the edge agent
+# Install minimal system requirements
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/fleet
+
+# Install Python requirements
+# Scikit-learn and XGBoost will compile or use pre-built wheels for aarch64
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source
+COPY src/ /opt/fleet/src/
+COPY scripts/ /opt/fleet/scripts/
+
+# Default entrypoint for an individual robot
+# In production, pass --agent-id via docker run args
+ENV PYTHONPATH=/opt/fleet/src
+ENTRYPOINT ["python", "scripts/run_distributed_demo.py"]

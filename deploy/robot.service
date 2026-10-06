@@ -1,0 +1,22 @@
+[Unit]
+Description=SIH26123 Edge-AI AMR Fleet Node
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=2
+User=pi
+WorkingDirectory=/opt/fleet
+# Start the distributed demo worker
+ExecStart=/usr/bin/python3 scripts/run_distributed_demo.py
+Environment=PYTHONPATH=/opt/fleet/src
+
+# Defense grade isolation
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
