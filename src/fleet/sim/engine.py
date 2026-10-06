@@ -32,6 +32,7 @@ from fleet.agent import Agent
 from fleet.grid import WarehouseGrid
 from fleet.planning import pibt as pibt_planner
 from fleet.planning.astar import astar
+from fleet.telemetry import AuditLogger
 
 
 @dataclass
@@ -41,7 +42,7 @@ class TickResult:
 
 
 class SimulationEngine:
-    def __init__(self, grid: WarehouseGrid, agents: list[Agent], mode: str = "naive"):
+    def __init__(self, grid: WarehouseGrid, agents: list[Agent], mode: str = "naive", enable_audit: bool = True):
         if mode not in ("naive", "pibt"):
             raise ValueError(f"unknown mode {mode!r}, expected 'naive' or 'pibt'")
         self.grid = grid
@@ -49,6 +50,7 @@ class SimulationEngine:
         self.mode = mode
         self.tick_count = 0
         self.total_collisions = 0
+        self.logger = AuditLogger() if enable_audit else None
         self._plan_all()
 
     def _plan_all(self) -> None:
@@ -134,6 +136,9 @@ class SimulationEngine:
                 agent.blocked_ticks = 0
             else:
                 agent.blocked_ticks += 1
+
+        if self.logger:
+            self.logger.log_tick(self.tick_count, self.dashboard_state(), self.total_collisions)
 
         return result
 
